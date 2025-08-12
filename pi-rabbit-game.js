@@ -2014,15 +2014,13 @@ class Realistic3DGardenGame {
                 this.man.isFollowing = true;
             }
         } else {
-            // Man continues following even when player moves away from bike
-            if (this.man.visible && this.man.isFollowing) {
-                // Keep following - don't disappear anymore
-            } else if (this.man.visible && !this.man.isFollowing && distanceToBike > 120) {
-                // Only disappear if not following yet and player moves away
+            // Only allow man to disappear if he hasn't started following yet
+            if (this.man.visible && !this.man.isFollowing && distanceToBike > 120) {
                 this.man.visible = false;
                 this.interaction.showingMessage = false;
                 this.interaction.messageTimer = 0;
             }
+            // If man is following, he stays visible no matter what
         }
         
         // Update message timer
@@ -2053,7 +2051,7 @@ class Realistic3DGardenGame {
             Math.pow(this.player.y - 100, 2)
         );
         
-        if (distanceToWindmill < 150 && !this.effects.windmill.spinning) {
+        if (distanceToWindmill < 300 && !this.effects.windmill.spinning) {
             this.effects.windmill.spinning = true;
             this.effects.windmill.spinTimer = 0;
             this.effects.windmill.spinSpeed = 0.2;
