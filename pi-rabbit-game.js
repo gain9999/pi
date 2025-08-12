@@ -18,7 +18,7 @@ class Realistic3DGardenGame {
             y: 300,
             width: 48,
             height: 48,
-            speed: 2.5,
+            speed: this.isMobile() ? 5.0 : 2.5, // 2x faster on mobile
             facing: 'down',
             animFrame: 0,
             animTimer: 0,
@@ -53,6 +53,10 @@ class Realistic3DGardenGame {
             animFrame: 0,
             animTimer: 0,
             visible: false,
+            isFollowing: false,
+            speed: 2.0,
+            targetX: 1320,
+            targetY: 1050,
             shadow: { offsetX: 2, offsetY: 4, blur: 8 }
         };
         
@@ -116,6 +120,11 @@ class Realistic3DGardenGame {
         this.createGarden();
         this.createAmbientParticles();
         this.gameLoop();
+    }
+    
+    isMobile() {
+        // Check if device is mobile based on touch capability and screen size
+        return 'ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth <= 768;
     }
     
     init() {
@@ -2000,9 +2009,16 @@ class Realistic3DGardenGame {
                 this.interaction.showingMessage = true;
                 this.interaction.messageTimer = 0;
             }
+            // After a short delay, man starts following
+            if (this.man.visible && this.interaction.messageTimer > 120) { // 2 seconds delay
+                this.man.isFollowing = true;
+            }
         } else {
-            // Man disappears when player moves away
-            if (this.man.visible && distanceToBike > 120) {
+            // Man continues following even when player moves away from bike
+            if (this.man.visible && this.man.isFollowing) {
+                // Keep following - don't disappear anymore
+            } else if (this.man.visible && !this.man.isFollowing && distanceToBike > 120) {
+                // Only disappear if not following yet and player moves away
                 this.man.visible = false;
                 this.interaction.showingMessage = false;
                 this.interaction.messageTimer = 0;
@@ -2023,6 +2039,11 @@ class Realistic3DGardenGame {
             if (this.man.animTimer > 30) { // Slower, calm animation
                 this.man.animFrame = (this.man.animFrame + 1) % 2;
                 this.man.animTimer = 0;
+            }
+            
+            // Man following behavior
+            if (this.man.isFollowing) {
+                this.updateManFollowing();
             }
         }
         
@@ -2110,6 +2131,82 @@ class Realistic3DGardenGame {
             if (this.effects.house.heartsTimer > 300) { // 5 seconds
                 this.effects.house.heartsFloating = false;
                 this.effects.house.hearts = [];
+            }
+        }
+    }
+    
+    updateManFollowing() {
+        // Calculate distance to player
+        const deltaX = this.player.x - this.man.x;
+        const deltaY = this.player.y - this.man.y;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        
+        // Follow if too far away (maintain some distance)
+        const followDistance = 100; // Stay about 100 pixels away
+        
+        if (distance > followDistance) {
+            // Move toward player but not too close
+            const moveX = (deltaX / distance) * this.man.speed;
+            const moveY = (deltaY / distance) * this.man.speed;
+            
+            const newX = this.man.x + moveX;
+            const newY = this.man.y + moveY;
+            
+            // Check collision with garden elements
+            const manRect = {x: newX, y: newY, width: this.man.width, height: this.man.height};
+            let collision = false;
+            
+            for (let element of this.gardenElements) {
+                if (element.solid && this.checkCollision(manRect, element)) {
+                    collision = true;
+                    break;
+                }
+            }
+            
+            // Update position if no collision
+            if (!collision) {
+                this.man.x = Math.max(0, Math.min(this.worldWidth - this.man.width, newX));
+                this.man.y = Math.max(0, Math.min(this.worldHeight - this.man.height, newY));
+                
+                // Update facing direction based on movement
+                if (Math.abs(moveX) > Math.abs(moveY)) {
+                    this.man.facing = moveX > 0 ? 'right' : 'left';
+                } else {
+                    this.man.facing = moveY > 0 ? 'down' : 'up';
+                }
+            } else {
+                // If collision, try to move around the obstacle
+                // Try moving horizontally first
+                const horizontalRect = {x: newX, y: this.man.y, width: this.man.width, height: this.man.height};
+                let horizontalCollision = false;
+                
+                for (let element of this.gardenElements) {
+                    if (element.solid && this.checkCollision(horizontalRect, element)) {
+                        horizontalCollision = true;
+                        break;
+                    }
+                }
+                
+                if (!horizontalCollision) {
+                    this.man.x = Math.max(0, Math.min(this.worldWidth - this.man.width, newX));
+                    this.man.facing = moveX > 0 ? 'right' : 'left';
+                } else {
+                    // Try moving vertically
+                    const verticalRect = {x: this.man.x, y: newY, width: this.man.width, height: this.man.height};
+                    let verticalCollision = false;
+                    
+                    for (let element of this.gardenElements) {
+                        if (element.solid && this.checkCollision(verticalRect, element)) {
+                            verticalCollision = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!verticalCollision) {
+                        this.man.y = Math.max(0, Math.min(this.worldHeight - this.man.height, newY));
+                        this.man.facing = moveY > 0 ? 'down' : 'up';
+                    }
+                }
             }
         }
     }
