@@ -94,6 +94,10 @@ class Realistic3DGardenGame {
             particles: []
         };
         
+        // Romantic flower system
+        this.romanticFlowers = [];
+        this.lastCrossTime = 0;
+        
         // Building interaction effects
         this.effects = {
             windmill: { spinning: false, spinTimer: 0, spinSpeed: 0 },
@@ -239,6 +243,7 @@ class Realistic3DGardenGame {
         // Special items
         this.bikeSprite = this.createBikeSprite();
         this.poopSprite = this.createPoopSprite();
+        this.smallFlowerSprite = this.createSmallFlowerSprite();
         
         // Background with depth
         this.createRealisticBackground();
@@ -2211,6 +2216,65 @@ class Realistic3DGardenGame {
         return canvas;
     }
     
+    createSmallFlowerSprite() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 16;
+        canvas.height = 16;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.imageSmoothingEnabled = true;
+        
+        // Flower center
+        const centerGradient = ctx.createRadialGradient(8, 8, 1, 8, 8, 3);
+        centerGradient.addColorStop(0, '#FFD700');
+        centerGradient.addColorStop(1, '#FFA500');
+        
+        ctx.fillStyle = centerGradient;
+        ctx.beginPath();
+        ctx.arc(8, 8, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Flower petals (5 petals)
+        const petalGradient = ctx.createRadialGradient(8, 8, 2, 8, 8, 6);
+        petalGradient.addColorStop(0, '#FFB6C1');
+        petalGradient.addColorStop(0.7, '#FF69B4');
+        petalGradient.addColorStop(1, '#FF1493');
+        
+        ctx.fillStyle = petalGradient;
+        
+        for (let i = 0; i < 5; i++) {
+            const angle = (i * Math.PI * 2) / 5;
+            const petalX = 8 + Math.cos(angle) * 4;
+            const petalY = 8 + Math.sin(angle) * 4;
+            
+            ctx.save();
+            ctx.translate(petalX, petalY);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 3, 1.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        // Small green leaves
+        ctx.fillStyle = '#32CD32';
+        ctx.beginPath();
+        ctx.ellipse(5, 12, 2, 1, Math.PI / 4, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.ellipse(11, 12, 2, 1, -Math.PI / 4, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Subtle shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.beginPath();
+        ctx.ellipse(8, 14, 4, 1, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        return canvas;
+    }
+    
     createRealisticBackground() {
         this.backgroundCanvas = document.createElement('canvas');
         this.backgroundCanvas.width = this.worldWidth;
@@ -3215,6 +3279,9 @@ class Realistic3DGardenGame {
         // Update explosion
         this.updateExplosion();
         
+        // Update romantic flowers
+        this.updateRomanticFlowers();
+        
         // Update ambient particles
         this.updateAmbientParticles();
         
@@ -3795,6 +3862,21 @@ class Realistic3DGardenGame {
         if (distanceToPoop < 25 && !this.explosion.active) {
             this.triggerExplosion();
         }
+        
+        // Check if lady and man are crossing paths (romantic flower spawning)
+        if (this.man.visible) {
+            const distanceToMan = Math.sqrt(
+                Math.pow(this.player.x - this.man.x, 2) + 
+                Math.pow(this.player.y - this.man.y, 2)
+            );
+            
+            // If lady and man are close (within 25 pixels) and enough time has passed
+            const currentTime = Date.now();
+            if (distanceToMan < 25 && currentTime - this.lastCrossTime > 2000) { // 2 seconds cooldown
+                this.spawnRomanticFlower();
+                this.lastCrossTime = currentTime;
+            }
+        }
     }
     
     updateManFollowing() {
@@ -3993,6 +4075,42 @@ class Realistic3DGardenGame {
         });
     }
     
+    spawnRomanticFlower() {
+        // Calculate midpoint between lady and man
+        const flowerX = (this.player.x + this.man.x) / 2;
+        const flowerY = (this.player.y + this.man.y) / 2;
+        
+        // Add small random offset for natural placement
+        const offsetX = (Math.random() - 0.5) * 20;
+        const offsetY = (Math.random() - 0.5) * 20;
+        
+        // Create a new romantic flower
+        const flower = {
+            x: flowerX + offsetX,
+            y: flowerY + offsetY,
+            age: 0,
+            size: 0.5 + Math.random() * 0.5, // Random size variation
+            color: Math.random() // Random color variation
+        };
+        
+        this.romanticFlowers.push(flower);
+        
+        // Play a soft heart sound for romance
+        this.playSound('heart');
+        
+        // Limit number of flowers to prevent performance issues
+        if (this.romanticFlowers.length > 100) {
+            this.romanticFlowers.splice(0, 10); // Remove oldest 10 flowers
+        }
+    }
+    
+    updateRomanticFlowers() {
+        // Age all flowers but don't remove them (flowers are permanent now)
+        this.romanticFlowers.forEach(flower => {
+            flower.age++;
+        });
+    }
+    
     createFireParticles() {
         this.effects.dentalClinic.fireParticles = [];
         
@@ -4183,6 +4301,9 @@ class Realistic3DGardenGame {
                 }
             }
         });
+        
+        // Draw romantic flowers
+        this.drawRomanticFlowers();
         
         // Draw ambient particles
         this.drawAmbientParticles();
@@ -4667,6 +4788,39 @@ class Realistic3DGardenGame {
         }
         
         ctx.restore();
+    }
+    
+    drawRomanticFlowers() {
+        this.romanticFlowers.forEach(flower => {
+            // Only draw flowers visible on screen
+            if (flower.x >= this.camera.x - 20 && 
+                flower.x <= this.camera.x + this.canvas.width + 20 &&
+                flower.y >= this.camera.y - 20 && 
+                flower.y <= this.camera.y + this.canvas.height + 20) {
+                
+                this.ctx.save();
+                this.ctx.translate(flower.x, flower.y);
+                
+                // Flowers are permanent, so always full opacity
+                this.ctx.globalAlpha = 1.0;
+                
+                // Scale based on size variation
+                const scale = flower.size;
+                this.ctx.scale(scale, scale);
+                
+                // Randomize color across full spectrum
+                const hueRotation = flower.color * 360;
+                this.ctx.filter = `hue-rotate(${hueRotation}deg)`;
+                
+                // Draw the small flower sprite
+                this.ctx.drawImage(this.smallFlowerSprite, -8, -8);
+                
+                this.ctx.restore();
+            }
+        });
+        
+        this.ctx.globalAlpha = 1;
+        this.ctx.filter = 'none';
     }
     
     drawSpecialEffects() {
