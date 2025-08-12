@@ -14,8 +14,8 @@ class Realistic3DGardenGame {
         
         // Player (Garden Explorer)
         this.player = {
-            x: 400,
-            y: 300,
+            x: 50,
+            y: 620,
             width: 48,
             height: 48,
             speed: this.isMobile() ? 5.0 : 2.5, // 2x faster on mobile
@@ -71,6 +71,14 @@ class Realistic3DGardenGame {
             height: 32
         };
         
+        // Poop location (center of screen)
+        this.poop = {
+            x: 900,
+            y: 700,
+            width: 32,
+            height: 24
+        };
+        
         // Interaction system
         this.interaction = {
             showingMessage: false,
@@ -79,13 +87,23 @@ class Realistic3DGardenGame {
             messageText2: "Have a wonderful year! Be strong, healthy and happy."
         };
         
+        // Explosion system
+        this.explosion = {
+            active: false,
+            timer: 0,
+            particles: []
+        };
+        
         // Building interaction effects
         this.effects = {
             windmill: { spinning: false, spinTimer: 0, spinSpeed: 0 },
             dentalClinic: { onFire: false, fireTimer: 0, fireParticles: [] },
             sushiro: { fishJumping: false, fishTimer: 0, jumpingFish: [] },
             house: { heartsFloating: false, heartsTimer: 0, hearts: [] },
-            machuPicchu: { llamasJumping: false, llamaTimer: 0, llamas: [] }
+            machuPicchu: { llamasJumping: false, llamaTimer: 0, llamas: [] },
+            rioDeJaneiro: { fireworksActive: false, fireworksTimer: 0, fireworks: [] },
+            sanMiguelDeAllende: { bellsRinging: false, bellTimer: 0, bells: [] },
+            okinawa: { shakuhachisPlaying: false, shakuhachiTimer: 0, sakuraPetals: [] }
         };
         
         // Camera with smooth movement
@@ -105,6 +123,32 @@ class Realistic3DGardenGame {
             shadowColor: 'rgba(0, 0, 0, 0.3)',
             sunColor: 'rgba(255, 248, 220, 0.2)'
         };
+        
+        // Sky elements
+        this.sky = {
+            sun: {
+                x: 1500,
+                y: 80,
+                size: 60,
+                glowSize: 120,
+                bobOffset: 0
+            },
+            clouds: []
+        };
+        
+        // Initialize clouds
+        this.createClouds();
+        
+        // Audio system
+        this.audio = {
+            backgroundMusic: null,
+            sounds: {},
+            musicVolume: 0.3,
+            soundVolume: 0.5,
+            musicEnabled: true,
+            soundEnabled: true
+        };
+        this.initAudio();
         
         // Garden world size (larger for more exploration)
         this.worldWidth = 1800;
@@ -145,6 +189,9 @@ class Realistic3DGardenGame {
         // Enable image smoothing for better 3D effects
         this.ctx.imageSmoothingEnabled = true;
         this.ctx.imageSmoothingQuality = 'high';
+        
+        // Start background music and ambient sounds after user interaction
+        this.startAudioOnInteraction();
     }
     
     createSprites() {
@@ -185,9 +232,13 @@ class Realistic3DGardenGame {
         this.sushiroSprite = this.createSushiroSprite();
         this.windmillSprite = this.createWindmillSprite();
         this.machuPicchuSprite = this.createMachuPicchuSprite();
+        this.rioDeJaneiroSprite = this.createRioDeJaneiroSprite();
+        this.sanMiguelDeAllendeSprite = this.createSanMiguelDeAllendeSprite();
+        this.okinawaSprite = this.createOkinawaSprite();
         
         // Special items
         this.bikeSprite = this.createBikeSprite();
+        this.poopSprite = this.createPoopSprite();
         
         // Background with depth
         this.createRealisticBackground();
@@ -795,48 +846,148 @@ class Realistic3DGardenGame {
         
         ctx.imageSmoothingEnabled = true;
         
-        // Pond edge (stone border)
-        const stoneGradient = ctx.createLinearGradient(0, 0, 0, 96);
-        stoneGradient.addColorStop(0, '#D3D3D3');
-        stoneGradient.addColorStop(0.5, '#A9A9A9');
-        stoneGradient.addColorStop(1, '#808080');
-        
-        ctx.fillStyle = stoneGradient;
+        // Natural pond outline (irregular, organic shape)
+        ctx.fillStyle = '#8B6914'; // Muddy earth color
         ctx.beginPath();
-        ctx.ellipse(64, 48, 60, 44, 0, 0, 2 * Math.PI);
+        // Create irregular pond shape using curves
+        ctx.moveTo(20, 48);
+        ctx.quadraticCurveTo(10, 25, 35, 15);
+        ctx.quadraticCurveTo(64, 8, 95, 20);
+        ctx.quadraticCurveTo(118, 35, 108, 55);
+        ctx.quadraticCurveTo(95, 80, 70, 85);
+        ctx.quadraticCurveTo(45, 88, 25, 75);
+        ctx.quadraticCurveTo(8, 65, 20, 48);
+        ctx.closePath();
         ctx.fill();
         
-        // Water with realistic reflection
-        const waterGradient = ctx.createRadialGradient(64, 48, 10, 64, 48, 50);
-        waterGradient.addColorStop(0, '#87CEEB');
-        waterGradient.addColorStop(0.3, '#4169E1');
-        waterGradient.addColorStop(0.8, '#191970');
-        waterGradient.addColorStop(1, '#000080');
+        // Natural sandy/rocky shore
+        const shoreGradient = ctx.createRadialGradient(64, 48, 0, 64, 48, 45);
+        shoreGradient.addColorStop(0, '#D2B48C');
+        shoreGradient.addColorStop(0.6, '#CD853F');
+        shoreGradient.addColorStop(1, '#8B6914');
+        
+        ctx.fillStyle = shoreGradient;
+        ctx.beginPath();
+        ctx.moveTo(25, 48);
+        ctx.quadraticCurveTo(15, 30, 38, 22);
+        ctx.quadraticCurveTo(64, 15, 90, 25);
+        ctx.quadraticCurveTo(108, 38, 100, 55);
+        ctx.quadraticCurveTo(90, 75, 68, 78);
+        ctx.quadraticCurveTo(48, 80, 30, 70);
+        ctx.quadraticCurveTo(15, 60, 25, 48);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Natural water with depth variation
+        const waterGradient = ctx.createRadialGradient(64, 48, 5, 64, 48, 35);
+        waterGradient.addColorStop(0, '#4682B4');
+        waterGradient.addColorStop(0.3, '#1E90FF');
+        waterGradient.addColorStop(0.6, '#4169E1');
+        waterGradient.addColorStop(1, '#191970');
         
         ctx.fillStyle = waterGradient;
         ctx.beginPath();
-        ctx.ellipse(64, 48, 52, 36, 0, 0, 2 * Math.PI);
+        ctx.moveTo(30, 48);
+        ctx.quadraticCurveTo(22, 35, 42, 28);
+        ctx.quadraticCurveTo(64, 22, 86, 30);
+        ctx.quadraticCurveTo(98, 40, 92, 55);
+        ctx.quadraticCurveTo(85, 70, 66, 72);
+        ctx.quadraticCurveTo(50, 74, 35, 65);
+        ctx.quadraticCurveTo(22, 58, 30, 48);
+        ctx.closePath();
         ctx.fill();
         
-        // Water ripples
-        ctx.strokeStyle = 'rgba(135, 206, 235, 0.5)';
-        ctx.lineWidth = 1;
-        for (let i = 0; i < 5; i++) {
-            const radius = 15 + i * 8;
+        // Cattails and reeds around the edge
+        ctx.strokeStyle = '#228B22';
+        ctx.lineWidth = 2;
+        ctx.fillStyle = '#8B4513';
+        
+        // Left side cattails
+        for (let i = 0; i < 3; i++) {
+            const x = 25 + i * 8;
+            const y = 35 + i * 5;
+            const height = 15 + Math.random() * 10;
+            
             ctx.beginPath();
-            ctx.ellipse(64, 48, radius, radius * 0.7, 0, 0, 2 * Math.PI);
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y - height);
+            ctx.stroke();
+            
+            // Cattail head
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(x - 1, y - height - 5, 2, 5);
+        }
+        
+        // Right side cattails
+        for (let i = 0; i < 2; i++) {
+            const x = 95 + i * 6;
+            const y = 40 + i * 4;
+            const height = 12 + Math.random() * 8;
+            
+            ctx.strokeStyle = '#228B22';
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y - height);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(x - 1, y - height - 4, 2, 4);
+        }
+        
+        // Water lilies
+        ctx.fillStyle = '#228B22';
+        
+        // Lily pad 1
+        ctx.beginPath();
+        ctx.ellipse(45, 45, 8, 6, Math.PI / 6, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Lily pad 2
+        ctx.beginPath();
+        ctx.ellipse(75, 52, 6, 8, -Math.PI / 4, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Lily flowers
+        ctx.fillStyle = '#FFB6C1';
+        ctx.beginPath();
+        ctx.arc(48, 42, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(78, 55, 2, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Gentle water ripples (more subtle)
+        ctx.strokeStyle = 'rgba(173, 216, 230, 0.4)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 3; i++) {
+            const centerX = 60 + Math.random() * 8;
+            const centerY = 48 + Math.random() * 6;
+            const radius = 8 + i * 5;
+            
+            ctx.beginPath();
+            ctx.ellipse(centerX, centerY, radius, radius * 0.6, 0, 0, 2 * Math.PI);
             ctx.stroke();
         }
         
-        // Water surface highlights
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        // Surface reflections (more natural)
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
         ctx.beginPath();
-        ctx.ellipse(50, 35, 15, 8, Math.PI / 6, 0, 2 * Math.PI);
+        ctx.ellipse(55, 40, 12, 6, Math.PI / 8, 0, 2 * Math.PI);
         ctx.fill();
         
-        ctx.beginPath();
-        ctx.ellipse(78, 42, 10, 5, -Math.PI / 4, 0, 2 * Math.PI);
-        ctx.fill();
+        // Small rocks around the edge
+        ctx.fillStyle = '#696969';
+        const rockPositions = [
+            {x: 35, y: 25}, {x: 85, y: 30}, {x: 25, y: 65}, {x: 95, y: 68}
+        ];
+        
+        rockPositions.forEach(rock => {
+            ctx.beginPath();
+            ctx.ellipse(rock.x, rock.y, 3 + Math.random() * 2, 2 + Math.random() * 2, Math.random() * Math.PI, 0, 2 * Math.PI);
+            ctx.fill();
+        });
         
         return canvas;
     }
@@ -1191,7 +1342,7 @@ class Realistic3DGardenGame {
         ctx.beginPath();
         ctx.ellipse(70, 120, 12, 60, 0, 0, 2 * Math.PI);
         ctx.fill();
-        
+
         // Windmill cap/roof (conical)
         ctx.fillStyle = '#8B4513';
         ctx.beginPath();
@@ -1294,7 +1445,7 @@ class Realistic3DGardenGame {
         ctx.fillStyle = '#2F4F4F';
         ctx.font = '8px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('1902', 60, 155);
+        ctx.fillText('1369', 60, 155);
         
         return canvas;
     }
@@ -1441,6 +1592,472 @@ class Realistic3DGardenGame {
         return canvas;
     }
     
+    createRioDeJaneiroSprite() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 200;
+        canvas.height = 140;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.imageSmoothingEnabled = true;
+        
+        // Sugarloaf Mountain backdrop
+        const mountainGradient = ctx.createLinearGradient(0, 0, 0, 140);
+        mountainGradient.addColorStop(0, '#87CEEB');
+        mountainGradient.addColorStop(0.3, '#4682B4');
+        mountainGradient.addColorStop(0.7, '#2F4F4F');
+        mountainGradient.addColorStop(1, '#1C3A2E');
+        
+        // Draw Sugarloaf Mountain silhouette
+        ctx.fillStyle = mountainGradient;
+        ctx.beginPath();
+        ctx.moveTo(0, 140);
+        ctx.lineTo(0, 90);
+        ctx.lineTo(30, 60);
+        ctx.lineTo(60, 40);
+        ctx.lineTo(90, 50);
+        ctx.lineTo(120, 35);
+        ctx.lineTo(150, 45);
+        ctx.lineTo(180, 30);
+        ctx.lineTo(200, 40);
+        ctx.lineTo(200, 140);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Corcovado Mountain with Christ the Redeemer
+        const christMountainGradient = ctx.createLinearGradient(0, 0, 0, 140);
+        christMountainGradient.addColorStop(0, '#98FB98');
+        christMountainGradient.addColorStop(0.5, '#228B22');
+        christMountainGradient.addColorStop(1, '#006400');
+        
+        ctx.fillStyle = christMountainGradient;
+        ctx.beginPath();
+        ctx.moveTo(70, 140);
+        ctx.lineTo(70, 70);
+        ctx.lineTo(100, 40);
+        ctx.lineTo(130, 70);
+        ctx.lineTo(130, 140);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Christ the Redeemer statue
+        // Statue base/pedestal
+        const pedestalGradient = ctx.createLinearGradient(0, 40, 0, 70);
+        pedestalGradient.addColorStop(0, '#F5F5DC');
+        pedestalGradient.addColorStop(1, '#D2B48C');
+        
+        ctx.fillStyle = pedestalGradient;
+        ctx.fillRect(95, 60, 10, 15);
+        ctx.strokeStyle = '#8B7355';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(95, 60, 10, 15);
+        
+        // Christ figure body
+        const christGradient = ctx.createLinearGradient(0, 35, 0, 60);
+        christGradient.addColorStop(0, '#FFFAF0');
+        christGradient.addColorStop(0.7, '#F5F5DC');
+        christGradient.addColorStop(1, '#E6E6FA');
+        
+        ctx.fillStyle = christGradient;
+        ctx.fillRect(97, 45, 6, 15); // Body
+        ctx.strokeStyle = '#D3D3D3';
+        ctx.strokeRect(97, 45, 6, 15);
+        
+        // Christ head
+        ctx.fillStyle = christGradient;
+        ctx.beginPath();
+        ctx.arc(100, 42, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        
+        // Outstretched arms (iconic pose)
+        ctx.fillStyle = christGradient;
+        ctx.fillRect(85, 48, 30, 3); // Horizontal arm span
+        ctx.strokeRect(85, 48, 30, 3);
+        
+        // Robe details
+        ctx.fillStyle = '#E6E6FA';
+        ctx.fillRect(96, 52, 8, 8);
+        
+        // Brazilian flag colors on base
+        ctx.fillStyle = '#009739'; // Green
+        ctx.fillRect(93, 70, 4, 3);
+        ctx.fillStyle = '#FEDD00'; // Yellow
+        ctx.fillRect(97, 70, 3, 3);
+        ctx.fillStyle = '#012169'; // Blue
+        ctx.fillRect(100, 70, 4, 3);
+        
+        // Copacabana beach at bottom
+        const beachGradient = ctx.createLinearGradient(0, 110, 0, 140);
+        beachGradient.addColorStop(0, '#F4A460');
+        beachGradient.addColorStop(1, '#DEB887');
+        
+        ctx.fillStyle = beachGradient;
+        ctx.fillRect(0, 120, 200, 20);
+        
+        // Ocean waves
+        ctx.fillStyle = '#4682B4';
+        ctx.beginPath();
+        for (let x = 0; x < 200; x += 20) {
+            ctx.moveTo(x, 118);
+            ctx.quadraticCurveTo(x + 10, 115, x + 20, 118);
+        }
+        ctx.stroke();
+        
+        // Palm trees
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(20, 100, 3, 20); // Trunk
+        ctx.fillRect(170, 105, 3, 15); // Trunk
+        
+        ctx.fillStyle = '#228B22';
+        // Palm fronds
+        ctx.beginPath();
+        ctx.arc(21, 100, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(171, 105, 6, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Clouds around mountains
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.beginPath();
+        ctx.arc(100, 35, 12, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.arc(150, 25, 10, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Title text
+        ctx.fillStyle = '#006400';
+        ctx.font = 'bold 8px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('RIO DE JANEIRO', 100, 135);
+        
+        return canvas;
+    }
+    
+    createSanMiguelDeAllendeSprite() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 200;
+        canvas.height = 140;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.imageSmoothingEnabled = true;
+        
+        // Desert mountain backdrop
+        const mountainGradient = ctx.createLinearGradient(0, 0, 0, 140);
+        mountainGradient.addColorStop(0, '#D2691E');
+        mountainGradient.addColorStop(0.5, '#A0522D');
+        mountainGradient.addColorStop(1, '#8B4513');
+        
+        ctx.fillStyle = mountainGradient;
+        ctx.beginPath();
+        ctx.moveTo(0, 140);
+        ctx.lineTo(0, 60);
+        ctx.lineTo(50, 30);
+        ctx.lineTo(100, 40);
+        ctx.lineTo(150, 25);
+        ctx.lineTo(200, 35);
+        ctx.lineTo(200, 140);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Colonial church (Parroquia de San Miguel Arcángel)
+        // Main church body
+        const churchGradient = ctx.createLinearGradient(0, 50, 0, 110);
+        churchGradient.addColorStop(0, '#FFB6C1');
+        churchGradient.addColorStop(0.5, '#F08080');
+        churchGradient.addColorStop(1, '#CD5C5C');
+        
+        ctx.fillStyle = churchGradient;
+        ctx.fillRect(70, 60, 60, 50);
+        ctx.strokeStyle = '#8B0000';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(70, 60, 60, 50);
+        
+        // Gothic spires (San Miguel's iconic pink church)
+        ctx.fillStyle = '#F08080';
+        // Central spire
+        ctx.beginPath();
+        ctx.moveTo(95, 60);
+        ctx.lineTo(100, 25);
+        ctx.lineTo(105, 60);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // Side spires
+        ctx.beginPath();
+        ctx.moveTo(75, 60);
+        ctx.lineTo(80, 35);
+        ctx.lineTo(85, 60);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(115, 60);
+        ctx.lineTo(120, 35);
+        ctx.lineTo(125, 60);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // Church entrance and windows
+        ctx.fillStyle = '#2F4F4F';
+        // Main door
+        ctx.fillRect(95, 85, 10, 25);
+        ctx.beginPath();
+        ctx.arc(100, 85, 5, Math.PI, 0);
+        ctx.fill();
+        
+        // Gothic windows
+        ctx.fillRect(80, 70, 6, 15);
+        ctx.fillRect(114, 70, 6, 15);
+        
+        // Rose window
+        ctx.strokeStyle = '#2F4F4F';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(100, 75, 4, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Colonial buildings around the church
+        const colonialGradient = ctx.createLinearGradient(0, 80, 0, 110);
+        colonialGradient.addColorStop(0, '#FFEFD5');
+        colonialGradient.addColorStop(0.5, '#F5DEB3');
+        colonialGradient.addColorStop(1, '#DEB887');
+        
+        // Left building
+        ctx.fillStyle = colonialGradient;
+        ctx.fillRect(30, 90, 35, 30);
+        ctx.strokeStyle = '#8B7355';
+        ctx.strokeRect(30, 90, 35, 30);
+        
+        // Right building
+        ctx.fillRect(135, 95, 40, 25);
+        ctx.strokeRect(135, 95, 40, 25);
+        
+        // Red tile roofs
+        ctx.fillStyle = '#B22222';
+        // Church roof details
+        ctx.fillRect(68, 58, 64, 4);
+        
+        // Colonial building roofs
+        ctx.fillRect(28, 88, 39, 4);
+        ctx.fillRect(133, 93, 44, 4);
+        
+        // Balconies and colonial details
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(40, 100, 15, 2); // Balcony
+        ctx.fillRect(145, 105, 20, 2); // Balcony
+        
+        // Windows with colonial grilles
+        ctx.fillStyle = '#2F4F4F';
+        ctx.fillRect(35, 95, 4, 6);
+        ctx.fillRect(50, 95, 4, 6);
+        ctx.fillRect(140, 100, 4, 6);
+        ctx.fillRect(160, 100, 4, 6);
+        
+        // Cobblestone plaza
+        ctx.fillStyle = '#696969';
+        for (let x = 20; x < 180; x += 8) {
+            for (let y = 115; y < 140; y += 6) {
+                if (Math.random() > 0.3) {
+                    ctx.fillRect(x, y, 6, 4);
+                }
+            }
+        }
+        
+        // Mexican flag colors detail
+        ctx.fillStyle = '#006847'; // Green
+        ctx.fillRect(180, 115, 8, 3);
+        ctx.fillStyle = '#FFFFFF'; // White
+        ctx.fillRect(180, 118, 8, 3);
+        ctx.fillStyle = '#CE1126'; // Red
+        ctx.fillRect(180, 121, 8, 3);
+        
+        // Title text
+        ctx.fillStyle = '#8B0000';
+        ctx.font = 'bold 7px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('SAN MIGUEL DE ALLENDE', 100, 135);
+        
+        return canvas;
+    }
+    
+    createOkinawaSprite() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 200;
+        canvas.height = 140;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.imageSmoothingEnabled = true;
+        
+        // Tropical mountain backdrop
+        const mountainGradient = ctx.createLinearGradient(0, 0, 0, 140);
+        mountainGradient.addColorStop(0, '#87CEEB');
+        mountainGradient.addColorStop(0.3, '#228B22');
+        mountainGradient.addColorStop(0.7, '#006400');
+        mountainGradient.addColorStop(1, '#2F4F2F');
+        
+        ctx.fillStyle = mountainGradient;
+        ctx.beginPath();
+        ctx.moveTo(0, 140);
+        ctx.lineTo(0, 70);
+        ctx.lineTo(40, 50);
+        ctx.lineTo(80, 60);
+        ctx.lineTo(120, 45);
+        ctx.lineTo(160, 55);
+        ctx.lineTo(200, 40);
+        ctx.lineTo(200, 140);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Shuri Castle (traditional Ryukyu architecture)
+        // Castle base/foundation
+        const castleBaseGradient = ctx.createLinearGradient(0, 70, 0, 110);
+        castleBaseGradient.addColorStop(0, '#D3D3D3');
+        castleBaseGradient.addColorStop(0.5, '#A9A9A9');
+        castleBaseGradient.addColorStop(1, '#696969');
+        
+        ctx.fillStyle = castleBaseGradient;
+        ctx.fillRect(60, 85, 80, 25);
+        ctx.strokeStyle = '#2F4F4F';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(60, 85, 80, 25);
+        
+        // Main castle structure
+        const castleGradient = ctx.createLinearGradient(0, 50, 0, 85);
+        castleGradient.addColorStop(0, '#DC143C');
+        castleGradient.addColorStop(0.5, '#B22222');
+        castleGradient.addColorStop(1, '#8B0000');
+        
+        ctx.fillStyle = castleGradient;
+        ctx.fillRect(70, 60, 60, 25);
+        ctx.strokeStyle = '#8B0000';
+        ctx.strokeRect(70, 60, 60, 25);
+        
+        // Traditional curved roof (distinctive Ryukyu style)
+        ctx.fillStyle = '#B22222';
+        ctx.beginPath();
+        // Main roof curve
+        ctx.moveTo(65, 60);
+        ctx.quadraticCurveTo(100, 45, 135, 60);
+        ctx.lineTo(130, 65);
+        ctx.quadraticCurveTo(100, 52, 70, 65);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // Secondary roof layers (traditional Japanese style)
+        ctx.fillStyle = '#8B0000';
+        ctx.beginPath();
+        ctx.moveTo(68, 65);
+        ctx.quadraticCurveTo(100, 52, 132, 65);
+        ctx.lineTo(128, 68);
+        ctx.quadraticCurveTo(100, 57, 72, 68);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Roof ornaments (traditional Ryukyu decorations)
+        ctx.fillStyle = '#FFD700';
+        // Dragon/shisa ornaments
+        ctx.beginPath();
+        ctx.arc(85, 48, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(100, 45, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(115, 48, 3, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Castle walls and gates
+        ctx.fillStyle = '#2F4F4F';
+        // Main entrance
+        ctx.fillRect(95, 70, 10, 15);
+        // Traditional gate arch
+        ctx.beginPath();
+        ctx.arc(100, 70, 5, Math.PI, 0);
+        ctx.fill();
+        
+        // Windows
+        ctx.fillRect(80, 70, 4, 8);
+        ctx.fillRect(116, 70, 4, 8);
+        
+        // Side structures
+        ctx.fillStyle = castleGradient;
+        ctx.fillRect(50, 75, 15, 20);
+        ctx.strokeRect(50, 75, 15, 20);
+        ctx.fillRect(135, 75, 15, 20);
+        ctx.strokeRect(135, 75, 15, 20);
+        
+        // Traditional stone walls
+        ctx.strokeStyle = '#2F4F4F';
+        ctx.lineWidth = 1;
+        for (let x = 60; x < 140; x += 8) {
+            for (let y = 88; y < 108; y += 6) {
+                ctx.strokeRect(x, y, 8, 6);
+            }
+        }
+        
+        // Tropical vegetation (distinctive to Okinawa)
+        ctx.fillStyle = '#228B22';
+        // Banyan trees
+        ctx.beginPath();
+        ctx.arc(25, 100, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(175, 105, 10, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Palm trees
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(22, 100, 2, 15);
+        ctx.fillRect(173, 105, 2, 12);
+        
+        // Hibiscus flowers (Okinawan symbol)
+        ctx.fillStyle = '#FF69B4';
+        ctx.beginPath();
+        ctx.arc(35, 95, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(165, 100, 3, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Ocean/beach
+        const oceanGradient = ctx.createLinearGradient(0, 115, 0, 140);
+        oceanGradient.addColorStop(0, '#00CED1');
+        oceanGradient.addColorStop(1, '#4682B4');
+        
+        ctx.fillStyle = oceanGradient;
+        ctx.fillRect(0, 115, 200, 25);
+        
+        // Waves
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < 200; x += 15) {
+            ctx.beginPath();
+            ctx.moveTo(x, 118);
+            ctx.quadraticCurveTo(x + 7, 115, x + 15, 118);
+            ctx.stroke();
+        }
+        
+        // Traditional Ryukyu patterns
+        ctx.fillStyle = '#FFD700';
+        ctx.fillRect(95, 62, 2, 2);
+        ctx.fillRect(103, 62, 2, 2);
+        
+        // Title text
+        ctx.fillStyle = '#8B0000';
+        ctx.font = 'bold 8px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('OKINAWA', 100, 135);
+        
+        return canvas;
+    }
+    
     createBikeSprite() {
         const canvas = document.createElement('canvas');
         canvas.width = 48;
@@ -1527,6 +2144,69 @@ class Realistic3DGardenGame {
         ctx.moveTo(22, 24);
         ctx.lineTo(30, 26);
         ctx.stroke();
+        
+        return canvas;
+    }
+    
+    createPoopSprite() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 32;
+        canvas.height = 24;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.imageSmoothingEnabled = true;
+        
+        // Main poop body (brown gradient)
+        const poopGradient = ctx.createRadialGradient(16, 12, 2, 16, 12, 14);
+        poopGradient.addColorStop(0, '#8B4513');
+        poopGradient.addColorStop(0.6, '#654321');
+        poopGradient.addColorStop(1, '#4A2C17');
+        
+        ctx.fillStyle = poopGradient;
+        
+        // Draw poop shape with multiple lumps
+        ctx.beginPath();
+        // Bottom lump
+        ctx.ellipse(16, 18, 12, 6, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Middle lump
+        ctx.beginPath();
+        ctx.ellipse(14, 12, 10, 5, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Top lump
+        ctx.beginPath();
+        ctx.ellipse(18, 8, 8, 4, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Add some texture lines
+        ctx.strokeStyle = '#654321';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.moveTo(8 + i * 4, 15 + i * 2);
+            ctx.lineTo(12 + i * 4, 17 + i * 2);
+            ctx.stroke();
+        }
+        
+        // Stink lines (wavy lines above)
+        ctx.strokeStyle = 'rgba(139, 69, 19, 0.6)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            const x = 12 + i * 4;
+            ctx.moveTo(x, 6);
+            ctx.quadraticCurveTo(x + 2, 3, x + 4, 6);
+            ctx.quadraticCurveTo(x + 6, 3, x + 8, 6);
+            ctx.stroke();
+        }
+        
+        // Shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.beginPath();
+        ctx.ellipse(17, 22, 10, 3, 0, 0, 2 * Math.PI);
+        ctx.fill();
         
         return canvas;
     }
@@ -1668,6 +2348,631 @@ class Realistic3DGardenGame {
         }
     }
     
+    createClouds() {
+        // Clear existing clouds first
+        this.sky.clouds = [];
+        
+        // Create several clouds with random positions slightly higher up
+        const cloudCount = 6; // Fewer but more realistic clouds
+        for (let i = 0; i < cloudCount; i++) {
+            this.sky.clouds.push({
+                x: Math.random() * this.worldWidth, // Ensure valid initial x
+                y: 20 + Math.random() * 80, // Higher up (20-100) for more sky-like appearance
+                width: 120 + Math.random() * 100, // Larger, more realistic clouds
+                height: 60 + Math.random() * 50, // Taller clouds
+                opacity: 0.7 + Math.random() * 0.25, // Slightly more transparent for realism
+                speed: 0.2 + Math.random() * 0.6, // Slower, more realistic movement
+                offsetY: Math.random() * 10,
+                phase: Math.random() * Math.PI * 2, // For gentle floating animation
+                puffs: [] // Will store individual cloud puffs for realistic shape
+            });
+        }
+        
+        // Generate realistic puff patterns for each cloud
+        this.sky.clouds.forEach(cloud => {
+            const puffCount = 5 + Math.floor(Math.random() * 4); // 5-8 puffs per cloud
+            for (let i = 0; i < puffCount; i++) {
+                cloud.puffs.push({
+                    x: (cloud.width * i / (puffCount - 1)) + (Math.random() - 0.5) * 30,
+                    y: (Math.random() - 0.5) * cloud.height * 0.6,
+                    size: 20 + Math.random() * 40,
+                    opacity: 0.6 + Math.random() * 0.4
+                });
+            }
+        });
+    }
+    
+    initAudio() {
+        // Create audio context for Web Audio API
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (error) {
+            console.log('Web Audio API not supported, using HTML5 Audio');
+        }
+        
+        // Create procedural background music
+        this.createBackgroundMusic();
+        
+        // Create procedural sound effects
+        this.createSoundEffects();
+    }
+    
+    createBackgroundMusic() {
+        // Create a gentle, ambient background music using Web Audio API
+        if (!this.audioContext) return;
+        
+        // Create oscillators for ambient background music
+        // this.createAmbientMusic();
+        
+        // Also create HTML5 audio backup with data URLs for simple melodies
+        this.createSimpleBackgroundTrack();
+    }
+    
+    createAmbientMusic() {
+        if (!this.audioContext) return;
+        
+        // Create a gentle ambient pad sound
+        const startAmbient = () => {
+            const oscillator1 = this.audioContext.createOscillator();
+            const oscillator2 = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+            
+            oscillator1.type = 'sine';
+            oscillator2.type = 'sine';
+            
+            // Gentle, peaceful frequencies
+            oscillator1.frequency.value = 220; // A3
+            oscillator2.frequency.value = 330; // E4
+            
+            gainNode.gain.value = this.audio.musicVolume * 0.1;
+            
+            oscillator1.connect(gainNode);
+            oscillator2.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+            
+            oscillator1.start();
+            oscillator2.start();
+            
+            // Add subtle frequency modulation for organic feel
+            const lfo = this.audioContext.createOscillator();
+            const lfoGain = this.audioContext.createGain();
+            lfo.frequency.value = 0.1;
+            lfoGain.gain.value = 2;
+            lfo.connect(lfoGain);
+            lfoGain.connect(oscillator1.frequency);
+            lfo.start();
+            
+            // Store references for cleanup
+            this.audio.ambientOscillators = [oscillator1, oscillator2, lfo];
+        };
+        
+        // Start ambient music after user interaction
+        document.addEventListener('click', startAmbient, { once: true });
+        document.addEventListener('keydown', startAmbient, { once: true });
+        document.addEventListener('touchstart', startAmbient, { once: true });
+    }
+    
+    createSimpleBackgroundTrack() {
+        // Create a beautiful, melodic background music
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const sampleRate = 44100;
+        const duration = 16; // 16 second loop for more complex melody
+        const length = sampleRate * duration;
+        const buffer = audioContext.createBuffer(2, length, sampleRate); // Stereo
+        const leftChannel = buffer.getChannelData(0);
+        const rightChannel = buffer.getChannelData(1);
+        
+        // Define a pleasant chord progression in C major
+        // I-vi-IV-V (C-Am-F-G) - very common and pleasant progression
+        const chordProgression = [
+            { notes: [261.63, 329.63, 392.00], duration: 4 }, // C major (C-E-G)
+            { notes: [220.00, 261.63, 329.63], duration: 4 }, // A minor (A-C-E)
+            { notes: [174.61, 220.00, 261.63], duration: 4 }, // F major (F-A-C)
+            { notes: [196.00, 246.94, 293.66], duration: 4 }  // G major (G-B-D)
+        ];
+        
+        // Main melody notes (pentatonic scale for pleasant sound)
+        const melodyNotes = [
+            261.63, 293.66, 329.63, 392.00, 440.00, // C D E G A
+            523.25, 587.33, 659.25, 783.99, 880.00  // C5 D5 E5 G5 A5 (octave higher)
+        ];
+        
+        // Generate the musical piece
+        for (let i = 0; i < length; i++) {
+            const time = i / sampleRate;
+            const measureTime = time % 16; // 16-second loop
+            const beatTime = measureTime % 4; // 4-second per chord
+            const chordIndex = Math.floor(measureTime / 4);
+            const currentChord = chordProgression[chordIndex];
+            
+            // Generate harmony (chord background)
+            let harmony = 0;
+            currentChord.notes.forEach((freq, index) => {
+                const volume = 0.03 / (index + 1); // Decrease volume for higher notes
+                harmony += Math.sin(2 * Math.PI * freq * time) * volume;
+            });
+            
+            // Generate melody line
+            let melody = 0;
+            const melodyIndex = Math.floor((measureTime * 2) % melodyNotes.length);
+            const melodyFreq = melodyNotes[melodyIndex];
+            const melodyEnvelope = Math.sin(Math.PI * (beatTime / 4)) * 0.8; // Note envelope
+            melody = Math.sin(2 * Math.PI * melodyFreq * time) * 0.08 * melodyEnvelope;
+            
+            // Add subtle arpeggio (broken chord pattern)
+            const arpeggioIndex = Math.floor((time * 4) % currentChord.notes.length);
+            const arpeggioFreq = currentChord.notes[arpeggioIndex];
+            const arpeggio = Math.sin(2 * Math.PI * arpeggioFreq * time) * 0.04 * 
+                           Math.sin(Math.PI * (beatTime * 4 % 1));
+            
+            // Add gentle bass line
+            const bassFreq = currentChord.notes[0] / 2; // Octave lower
+            const bass = Math.sin(2 * Math.PI * bassFreq * time) * 0.06 * 
+                        Math.max(0, Math.sin(Math.PI * beatTime / 4));
+            
+            // Combine all elements
+            const leftMix = harmony + arpeggio + bass;
+            const rightMix = harmony * 0.8 + arpeggio * 1.2 + bass; // Slight stereo variation
+            
+            // Apply gentle fade in/out for seamless looping
+            const fadeTime = 0.5; // 0.5 second fade
+            let fadeMultiplier = 1;
+            if (time < fadeTime) {
+                fadeMultiplier = time / fadeTime;
+            } else if (time > duration - fadeTime) {
+                fadeMultiplier = (duration - time) / fadeTime;
+            }
+            
+            // Final output with fade
+            leftChannel[i] = leftMix * fadeMultiplier * 0.4;
+            rightChannel[i] = rightMix * fadeMultiplier * 0.4;
+        }
+        
+        // Convert to data URL and create audio element
+        this.bufferToDataURL(buffer).then(dataURL => {
+            this.audio.backgroundMusic = new Audio(dataURL);
+            this.audio.backgroundMusic.loop = true;
+            this.audio.backgroundMusic.volume = this.audio.musicVolume;
+        });
+    }
+    
+    createSoundEffects() {
+        // Create procedural sound effects
+        this.audio.sounds = {
+            walk: this.createWalkSound(),
+            building: this.createBuildingSound(),
+            heart: this.createHeartSound(),
+            llama: this.createLlamaSound(),
+            float: this.createFloatSound(),
+            ambient: this.createAmbientSounds(),
+            fire: this.createFireSound(),
+            windmill: this.createWindmillSound(),
+            splash: this.createSplashSound(),
+            bell: this.createBellSound()
+        };
+    }
+    
+    createWalkSound() {
+        // Create footstep sound using noise
+        return () => {
+            if (!this.audioContext || !this.audio.soundEnabled) return;
+            
+            const noise = this.audioContext.createBufferSource();
+            const buffer = this.audioContext.createBuffer(1, 0.1 * this.audioContext.sampleRate, this.audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            for (let i = 0; i < data.length; i++) {
+                data[i] = (Math.random() * 2 - 1) * 0.1;
+            }
+            
+            noise.buffer = buffer;
+            const filter = this.audioContext.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 800;
+            
+            const gain = this.audioContext.createGain();
+            gain.gain.value = this.audio.soundVolume * 0.2;
+            gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.1);
+            
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.audioContext.destination);
+            noise.start();
+        };
+    }
+    
+    createBuildingSound() {
+        // Create building interaction sound
+        return () => {
+            if (!this.audioContext || !this.audio.soundEnabled) return;
+            
+            const oscillator = this.audioContext.createOscillator();
+            const gain = this.audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 800;
+            oscillator.frequency.exponentialRampToValueAtTime(400, this.audioContext.currentTime + 0.2);
+            
+            gain.gain.value = this.audio.soundVolume * 0.3;
+            gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.3);
+            
+            oscillator.connect(gain);
+            gain.connect(this.audioContext.destination);
+            oscillator.start();
+            oscillator.stop(this.audioContext.currentTime + 0.3);
+        };
+    }
+    
+    createHeartSound() {
+        // Create heart effect sound
+        return () => {
+            if (!this.audioContext || !this.audio.soundEnabled) return;
+            
+            const oscillator = this.audioContext.createOscillator();
+            const gain = this.audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 600;
+            
+            gain.gain.value = this.audio.soundVolume * 0.2;
+            gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.15);
+            
+            oscillator.connect(gain);
+            gain.connect(this.audioContext.destination);
+            oscillator.start();
+            oscillator.stop(this.audioContext.currentTime + 0.15);
+        };
+    }
+    
+    createLlamaSound() {
+        // Create llama effect sound
+        return () => {
+            if (!this.audioContext || !this.audio.soundEnabled) return;
+            
+            const oscillator = this.audioContext.createOscillator();
+            const gain = this.audioContext.createGain();
+            
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.value = 300;
+            oscillator.frequency.linearRampToValueAtTime(250, this.audioContext.currentTime + 0.1);
+            
+            gain.gain.value = this.audio.soundVolume * 0.25;
+            gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.2);
+            
+            oscillator.connect(gain);
+            gain.connect(this.audioContext.destination);
+            oscillator.start();
+            oscillator.stop(this.audioContext.currentTime + 0.2);
+        };
+    }
+    
+    createFloatSound() {
+        // Create floating/teleportation sound
+        return () => {
+            if (!this.audioContext || !this.audio.soundEnabled) return;
+            
+            const oscillator = this.audioContext.createOscillator();
+            const gain = this.audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 400;
+            oscillator.frequency.exponentialRampToValueAtTime(800, this.audioContext.currentTime + 0.5);
+            
+            gain.gain.value = this.audio.soundVolume * 0.3;
+            gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.5);
+            
+            oscillator.connect(gain);
+            gain.connect(this.audioContext.destination);
+            oscillator.start();
+            oscillator.stop(this.audioContext.currentTime + 0.5);
+        };
+    }
+    
+    createAmbientSounds() {
+        // Create ambient nature sounds
+        return () => {
+            if (!this.audioContext || !this.audio.soundEnabled) return;
+            
+            // Gentle wind sound
+            const noise = this.audioContext.createBufferSource();
+            const buffer = this.audioContext.createBuffer(1, 2 * this.audioContext.sampleRate, this.audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            for (let i = 0; i < data.length; i++) {
+                data[i] = (Math.random() * 2 - 1) * 0.05;
+            }
+            
+            noise.buffer = buffer;
+            const filter = this.audioContext.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 400;
+            
+            const gain = this.audioContext.createGain();
+            gain.gain.value = this.audio.soundVolume * 0.1;
+            
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.audioContext.destination);
+            noise.start();
+        };
+    }
+    
+    createFireSound() {
+        // Create crackling fire sound
+        return () => {
+            if (!this.audioContext || !this.audio.soundEnabled) return;
+            
+            // Generate crackling noise for fire
+            const noise = this.audioContext.createBufferSource();
+            const buffer = this.audioContext.createBuffer(1, 0.5 * this.audioContext.sampleRate, this.audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            for (let i = 0; i < data.length; i++) {
+                // Create irregular crackling pattern
+                const crackle = (Math.random() * 2 - 1) * Math.pow(Math.random(), 2);
+                data[i] = crackle * 0.15;
+            }
+            
+            noise.buffer = buffer;
+            
+            // Filter to make it sound more like fire
+            const filter = this.audioContext.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.value = 200;
+            
+            const filter2 = this.audioContext.createBiquadFilter();
+            filter2.type = 'lowpass';
+            filter2.frequency.value = 2000;
+            
+            const gain = this.audioContext.createGain();
+            gain.gain.value = this.audio.soundVolume * 0.2;
+            gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.5);
+            
+            noise.connect(filter);
+            filter.connect(filter2);
+            filter2.connect(gain);
+            gain.connect(this.audioContext.destination);
+            noise.start();
+        };
+    }
+    
+    createWindmillSound() {
+        // Create whooshing windmill blade sound
+        return () => {
+            if (!this.audioContext || !this.audio.soundEnabled) return;
+            
+            // Create whoosh sound with frequency modulation
+            const oscillator = this.audioContext.createOscillator();
+            const lfo = this.audioContext.createOscillator();
+            const lfoGain = this.audioContext.createGain();
+            const filter = this.audioContext.createBiquadFilter();
+            const gain = this.audioContext.createGain();
+            
+            // Base frequency for wind sound
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.value = 80;
+            
+            // LFO for whooshing effect
+            lfo.type = 'sine';
+            lfo.frequency.value = 2; // 2 Hz for spinning effect
+            lfoGain.gain.value = 30;
+            
+            // Filter for wind-like sound
+            filter.type = 'lowpass';
+            filter.frequency.value = 400;
+            filter.Q.value = 2;
+            
+            gain.gain.value = this.audio.soundVolume * 0.15;
+            gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 1.5);
+            
+            // Connect LFO to modulate main oscillator frequency
+            lfo.connect(lfoGain);
+            lfoGain.connect(oscillator.frequency);
+            
+            oscillator.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.audioContext.destination);
+            
+            oscillator.start();
+            lfo.start();
+            oscillator.stop(this.audioContext.currentTime + 1.5);
+            lfo.stop(this.audioContext.currentTime + 1.5);
+        };
+    }
+    
+    createSplashSound() {
+        // Create fish splashing sound
+        return () => {
+            if (!this.audioContext || !this.audio.soundEnabled) return;
+            
+            // Create splash sound using noise burst with envelope
+            const noise = this.audioContext.createBufferSource();
+            const buffer = this.audioContext.createBuffer(1, 0.3 * this.audioContext.sampleRate, this.audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            for (let i = 0; i < data.length; i++) {
+                const t = i / data.length;
+                // Create splash envelope - sharp attack, quick decay
+                const envelope = Math.exp(-t * 8) * (1 - t);
+                data[i] = (Math.random() * 2 - 1) * envelope * 0.3;
+            }
+            
+            noise.buffer = buffer;
+            
+            // Filter to simulate water splash
+            const filter = this.audioContext.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = 800;
+            filter.Q.value = 3;
+            
+            const gain = this.audioContext.createGain();
+            gain.gain.value = this.audio.soundVolume * 0.25;
+            
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.audioContext.destination);
+            noise.start();
+        };
+    }
+    
+    createBellSound() {
+        // Create realistic church bell sound with harmonics
+        return () => {
+            if (!this.audioContext || !this.audio.soundEnabled) return;
+            
+            const duration = 2.0; // Bell rings for 2 seconds
+            const fundamental = 220; // A3 note
+            
+            // Create multiple oscillators for bell harmonics
+            const harmonics = [
+                { freq: fundamental, gain: 0.4 },
+                { freq: fundamental * 2.01, gain: 0.3 }, // Slightly detuned octave
+                { freq: fundamental * 3.03, gain: 0.2 },
+                { freq: fundamental * 4.05, gain: 0.15 },
+                { freq: fundamental * 5.07, gain: 0.1 }
+            ];
+            
+            harmonics.forEach((harmonic, index) => {
+                const osc = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
+                
+                osc.type = 'sine';
+                osc.frequency.value = harmonic.freq;
+                
+                // Bell envelope - quick attack, long decay with beating
+                const now = this.audioContext.currentTime;
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(harmonic.gain * this.audio.soundVolume * 0.3, now + 0.01);
+                gain.gain.exponentialRampToValueAtTime(harmonic.gain * this.audio.soundVolume * 0.1, now + 0.3);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                
+                // Add slight frequency modulation for realistic bell shimmer
+                const lfo = this.audioContext.createOscillator();
+                const lfoGain = this.audioContext.createGain();
+                lfo.frequency.value = 3 + index * 0.5; // Different modulation rates
+                lfoGain.gain.value = harmonic.freq * 0.01; // Slight vibrato
+                
+                lfo.connect(lfoGain);
+                lfoGain.connect(osc.frequency);
+                
+                // Low-pass filter to soften the bell sound
+                filter.type = 'lowpass';
+                filter.frequency.value = 3000 - index * 200;
+                filter.Q.value = 1;
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.audioContext.destination);
+                
+                osc.start(now);
+                lfo.start(now);
+                osc.stop(now + duration);
+                lfo.stop(now + duration);
+            });
+        };
+    }
+    
+    // Helper function to convert audio buffer to data URL
+    bufferToDataURL(buffer) {
+        return new Promise((resolve) => {
+            const length = buffer.length;
+            const channels = buffer.numberOfChannels;
+            const bytesPerSample = 2; // 16-bit
+            const dataSize = length * channels * bytesPerSample;
+            const arrayBuffer = new ArrayBuffer(44 + dataSize);
+            const view = new DataView(arrayBuffer);
+            
+            // WAV header
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+            
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + dataSize, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true); // PCM format
+            view.setUint16(22, channels, true); // Number of channels
+            view.setUint32(24, buffer.sampleRate, true);
+            view.setUint32(28, buffer.sampleRate * channels * bytesPerSample, true);
+            view.setUint16(32, channels * bytesPerSample, true);
+            view.setUint16(34, 16, true); // Bits per sample
+            writeString(36, 'data');
+            view.setUint32(40, dataSize, true);
+            
+            // Write audio data
+            let offset = 44;
+            for (let i = 0; i < length; i++) {
+                for (let channel = 0; channel < channels; channel++) {
+                    const channelData = buffer.getChannelData(channel);
+                    const sample = Math.max(-1, Math.min(1, channelData[i])); // Clamp
+                    view.setInt16(offset, sample * 0x7FFF, true);
+                    offset += 2;
+                }
+            }
+            
+            const blob = new Blob([arrayBuffer], { type: 'audio/wav' });
+            resolve(URL.createObjectURL(blob));
+        });
+    }
+    
+    playSound(soundName) {
+        if (this.audio.sounds[soundName]) {
+            this.audio.sounds[soundName]();
+        }
+    }
+    
+    startBackgroundMusic() {
+        if (this.audio.backgroundMusic && this.audio.musicEnabled) {
+            this.audio.backgroundMusic.play().catch(e => console.log('Audio play failed:', e));
+        }
+    }
+    
+    stopBackgroundMusic() {
+        if (this.audio.backgroundMusic) {
+            this.audio.backgroundMusic.pause();
+        }
+    }
+    
+    toggleMusic() {
+        this.audio.musicEnabled = !this.audio.musicEnabled;
+        if (this.audio.musicEnabled) {
+            this.startBackgroundMusic();
+        } else {
+            this.stopBackgroundMusic();
+        }
+    }
+    
+    toggleSounds() {
+        this.audio.soundEnabled = !this.audio.soundEnabled;
+    }
+    
+    startAudioOnInteraction() {
+        const startAudio = () => {
+            // Start background music
+            this.startBackgroundMusic();
+            
+            // Start ambient sounds
+            this.playSound('ambient');
+            
+            // Set up periodic ambient sounds
+            setInterval(() => {
+                if (Math.random() < 0.3) { // 30% chance every interval
+                    this.playSound('ambient');
+                }
+            }, 8000); // Every 8 seconds
+        };
+        
+        // Start audio after first user interaction
+        document.addEventListener('click', startAudio, { once: true });
+        document.addEventListener('keydown', startAudio, { once: true });
+        document.addEventListener('touchstart', startAudio, { once: true });
+    }
+    
     createGarden() {
         // Trees with more realistic spacing
         const treePositions = [
@@ -1773,7 +3078,10 @@ class Realistic3DGardenGame {
             {type: 'home', x: 800, y: 300, width: 140, height: 110},
             {type: 'sushiro', x: 1200, y: 150, width: 180, height: 100},
             {type: 'windmill', x: 500, y: 100, width: 120, height: 180},
-            {type: 'machupicchu', x: 100, y: 1200, width: 200, height: 140}
+            {type: 'machupicchu', x: 100, y: 1200, width: 200, height: 140},
+            {type: 'riodejaneiro', x: 450, y: 1200, width: 200, height: 140},
+            {type: 'sanmigueldeallende', x: 800, y: 1200, width: 200, height: 140},
+            {type: 'okinawa', x: 1150, y: 1200, width: 200, height: 140}
         ];
         
         buildingPositions.forEach(pos => {
@@ -1801,12 +3109,38 @@ class Realistic3DGardenGame {
             shadowOffsetY: 4
         });
         
+        // Poop - add to garden elements
+        this.gardenElements.push({
+            type: 'poop',
+            x: this.poop.x,
+            y: this.poop.y,
+            width: this.poop.width,
+            height: this.poop.height,
+            solid: false,
+            shadowOffsetX: 2,
+            shadowOffsetY: 2
+        });
+        
         console.log('Bike added to garden at:', this.bike.x, this.bike.y);
+        console.log('Poop added to garden at:', this.poop.x, this.poop.y);
     }
     
     setupEventListeners() {
         window.addEventListener('keydown', (e) => {
             this.keys[e.code] = true;
+            
+            // Audio controls
+            if (e.code === 'KeyM') {
+                this.toggleMusic();
+                e.preventDefault();
+                return;
+            }
+            if (e.code === 'KeyN') {
+                this.toggleSounds();
+                e.preventDefault();
+                return;
+            }
+            
             e.preventDefault();
         });
         
@@ -1877,6 +3211,9 @@ class Realistic3DGardenGame {
         
         // Update particles
         this.updateParticles();
+        
+        // Update explosion
+        this.updateExplosion();
         
         // Update ambient particles
         this.updateAmbientParticles();
@@ -2020,6 +3357,9 @@ class Realistic3DGardenGame {
             this.player.floatingTimer = 0;
             this.player.floatingStartY = newY;
             
+            // Play floating sound effect
+            this.playSound('float');
+            
             // Teleport to random safe location after floating animation
             setTimeout(() => {
                 this.teleportPlayerToRandomLocation();
@@ -2051,8 +3391,20 @@ class Realistic3DGardenGame {
         
         // Only update position if no collision
         if (!collision) {
+            // Check if player actually moved
+            const moved = (Math.abs(this.player.x - newX) > 0.1 || Math.abs(this.player.y - newY) > 0.1);
+            
             this.player.x = newX;
             this.player.y = newY;
+            
+            // Play footstep sound if player moved
+            if (moved && this.player.isMoving) {
+                // Throttle footstep sounds
+                if (!this.lastFootstepTime || Date.now() - this.lastFootstepTime > 300) {
+                    this.playSound('walk');
+                    this.lastFootstepTime = Date.now();
+                }
+            }
         } else if (this.touch.isMovingToTarget) {
             // If collision during touch movement, cancel the touch target
             this.touch.isMovingToTarget = false;
@@ -2205,9 +3557,16 @@ class Realistic3DGardenGame {
         // If player is near bike (within 80 pixels)
         if (distanceToBike < 80) {
             if (!this.man.visible) {
-                // Man appears
+                // Man appears for the first time
                 this.man.visible = true;
                 this.man.facing = 'left'; // Face toward the player
+                
+                // Play bike sound effect when first approaching
+                this.playSound('building');
+            }
+            
+            // Show message every time player gets close to bike (if not already showing)
+            if (!this.interaction.showingMessage) {
                 this.interaction.showingMessage = true;
                 this.interaction.messageTimer = 0;
             }
@@ -2258,6 +3617,9 @@ class Realistic3DGardenGame {
             this.effects.windmill.spinning = true;
             this.effects.windmill.spinTimer = 0;
             this.effects.windmill.spinSpeed = 0.2;
+            
+            // Play windmill spinning sound
+            this.playSound('windmill');
         }
         
         // Update windmill spinning
@@ -2297,7 +3659,7 @@ class Realistic3DGardenGame {
             Math.pow(this.player.y - 150, 2)
         );
         
-        if (distanceToSushiro < 120 && !this.effects.sushiro.fishJumping) {
+        if (distanceToSushiro < 125 && !this.effects.sushiro.fishJumping) {
             this.effects.sushiro.fishJumping = true;
             this.effects.sushiro.fishTimer = 0;
             this.createJumpingFish();
@@ -2341,7 +3703,7 @@ class Realistic3DGardenGame {
             Math.pow(this.player.y - 1200, 2)
         );
         
-        if (distanceToMachuPicchu < 150 && !this.effects.machuPicchu.llamasJumping) {
+        if (distanceToMachuPicchu < 100 && !this.effects.machuPicchu.llamasJumping) {
             this.effects.machuPicchu.llamasJumping = true;
             this.effects.machuPicchu.llamaTimer = 0;
             this.createJumpingLlamas();
@@ -2355,6 +3717,83 @@ class Realistic3DGardenGame {
                 this.effects.machuPicchu.llamasJumping = false;
                 this.effects.machuPicchu.llamas = [];
             }
+        }
+        
+        // Check distance to Rio de Janeiro (450, 1200)
+        const distanceToRio = Math.sqrt(
+            Math.pow(this.player.x - 450, 2) + 
+            Math.pow(this.player.y - 1200, 2)
+        );
+        
+        if (distanceToRio < 100 && !this.effects.rioDeJaneiro.fireworksActive) {
+            this.effects.rioDeJaneiro.fireworksActive = true;
+            this.effects.rioDeJaneiro.fireworksTimer = 0;
+            this.createFireworks();
+        }
+        
+        // Update Rio fireworks
+        if (this.effects.rioDeJaneiro.fireworksActive) {
+            this.effects.rioDeJaneiro.fireworksTimer++;
+            this.updateFireworks();
+            if (this.effects.rioDeJaneiro.fireworksTimer > 300) { // 6 seconds
+                this.effects.rioDeJaneiro.fireworksActive = false;
+                this.effects.rioDeJaneiro.fireworks = [];
+            }
+        }
+        
+        // Check distance to San Miguel de Allende (800, 1200)
+        const distanceToSanMiguel = Math.sqrt(
+            Math.pow(this.player.x - 800, 2) + 
+            Math.pow(this.player.y - 1200, 2)
+        );
+        
+        if (distanceToSanMiguel < 100 && !this.effects.sanMiguelDeAllende.bellsRinging) {
+            this.effects.sanMiguelDeAllende.bellsRinging = true;
+            this.effects.sanMiguelDeAllende.bellTimer = 0;
+            this.createBells();
+        }
+        
+        // Update San Miguel bells
+        if (this.effects.sanMiguelDeAllende.bellsRinging) {
+            this.effects.sanMiguelDeAllende.bellTimer++;
+            this.updateBells();
+            if (this.effects.sanMiguelDeAllende.bellTimer > 280) { // 5.6 seconds
+                this.effects.sanMiguelDeAllende.bellsRinging = false;
+                this.effects.sanMiguelDeAllende.bells = [];
+            }
+        }
+        
+        // Check distance to Okinawa (1150, 1200)
+        const distanceToOkinawa = Math.sqrt(
+            Math.pow(this.player.x - 1150, 2) + 
+            Math.pow(this.player.y - 1200, 2)
+        );
+        
+        if (distanceToOkinawa < 100 && !this.effects.okinawa.shakuhachisPlaying) {
+            this.effects.okinawa.shakuhachisPlaying = true;
+            this.effects.okinawa.shakuhachiTimer = 0;
+            this.createSakuraPetals();
+        }
+        
+        // Update Okinawa shakuhachi and sakura petals
+        if (this.effects.okinawa.shakuhachisPlaying) {
+            this.effects.okinawa.shakuhachiTimer++;
+            this.updateSakuraPetals();
+            if (this.effects.okinawa.shakuhachiTimer > 350) { // 7 seconds
+                this.effects.okinawa.shakuhachisPlaying = false;
+                this.effects.okinawa.sakuraPetals = [];
+            }
+        }
+        
+        // Check collision with poop
+        const distanceToPoop = Math.sqrt(
+            Math.pow(this.player.x - this.poop.x, 2) + 
+            Math.pow(this.player.y - this.poop.y, 2)
+        );
+        
+        // If player steps on poop (within 20 pixels)
+        if (distanceToPoop < 25 && !this.explosion.active) {
+            this.triggerExplosion();
         }
     }
     
@@ -2493,8 +3932,73 @@ class Realistic3DGardenGame {
         }
     }
     
+    triggerExplosion() {
+        this.explosion.active = true;
+        this.explosion.timer = 0;
+        this.explosion.particles = [];
+        
+        // Play explosion sound
+        this.playSound('fire');
+        
+        // Create explosion particles
+        for (let i = 0; i < 100; i++) {
+            this.explosion.particles.push({
+                x: this.poop.x + 16, // Center of poop
+                y: this.poop.y + 12,
+                velocityX: (Math.random() - 0.5) * 20,
+                velocityY: (Math.random() - 0.5) * 20 - 5,
+                life: 60 + Math.random() * 60,
+                maxLife: 60 + Math.random() * 60,
+                size: 2 + Math.random() * 8,
+                color: ['#FF4500', '#FF6347', '#FFD700', '#FF8C00', '#B22222'][Math.floor(Math.random() * 5)]
+            });
+        }
+        
+        // Schedule respawn at home after explosion
+        setTimeout(() => {
+            this.respawnAtHome();
+        }, 300); // 2 seconds
+    }
+    
+    respawnAtHome() {
+        // Find the home position (800, 300)
+        this.player.x = 730;
+        this.player.y = 400;
+        this.player.isFloating = false;
+        this.player.floatingTimer = 0;
+        
+        // End explosion
+        this.explosion.active = false;
+        this.explosion.particles = [];
+        
+        // Create sparkle effect at home
+        this.createTeleportSparkles(800, 300);
+    }
+    
+    updateExplosion() {
+        if (!this.explosion.active) return;
+        
+        this.explosion.timer++;
+        
+        // Update explosion particles
+        this.explosion.particles.forEach((particle, index) => {
+            particle.x += particle.velocityX;
+            particle.y += particle.velocityY;
+            particle.velocityY += 0.5; // Gravity
+            particle.life--;
+            
+            if (particle.life <= 0) {
+                this.explosion.particles.splice(index, 1);
+            }
+        });
+    }
+    
     createFireParticles() {
         this.effects.dentalClinic.fireParticles = [];
+        
+        // Play fire crackling sound
+        this.playSound('fire');
+        
         for (let i = 0; i < 30; i++) {
             this.effects.dentalClinic.fireParticles.push({
                 x: 200 + Math.random() * 160,
@@ -2538,6 +4042,10 @@ class Realistic3DGardenGame {
     
     createJumpingFish() {
         this.effects.sushiro.jumpingFish = [];
+        
+        // Play splash sound effect
+        this.playSound('splash');
+        
         const fishColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'];
         
         for (let i = 0; i < 12; i++) { // More fish
@@ -2664,7 +4172,11 @@ class Realistic3DGardenGame {
                         }
                         break;
                     case 'machupicchu': sprite = this.machuPicchuSprite; break;
+                    case 'riodejaneiro': sprite = this.rioDeJaneiroSprite; break;
+                    case 'sanmigueldeallende': sprite = this.sanMiguelDeAllendeSprite; break;
+                    case 'okinawa': sprite = this.okinawaSprite; break;
                     case 'bike': sprite = this.bikeSprite; break;
+                    case 'poop': sprite = this.poopSprite; break;
                 }
                 if (sprite) {
                     this.ctx.drawImage(sprite, item.x, item.y);
@@ -2677,6 +4189,9 @@ class Realistic3DGardenGame {
         
         // Draw special effects
         this.drawSpecialEffects();
+        
+        // Draw sky elements (sun and clouds) on top of everything
+        this.drawSky();
         
         // Restore context
         this.ctx.restore();
@@ -2696,6 +4211,106 @@ class Realistic3DGardenGame {
             0, 0, 2 * Math.PI
         );
         this.ctx.fill();
+    }
+    
+    drawSky() {
+        // Safety check: ensure sky system is initialized
+        if (!this.sky || !this.sky.sun || !this.sky.clouds) {
+            return;
+        }
+        
+        // Draw sun
+        const sun = this.sky.sun;
+        const time = Date.now() * 0.001; // Convert to seconds for smoother animation
+        
+        // Safety check for sun properties
+        if (!isFinite(sun.x) || !isFinite(sun.y) || !isFinite(sun.size) || !isFinite(sun.glowSize)) {
+            return;
+        }
+        
+        // Sun glow effect
+        const sunGradient = this.ctx.createRadialGradient(
+            sun.x, sun.y, 0,
+            sun.x, sun.y, sun.glowSize
+        );
+        sunGradient.addColorStop(0, 'rgba(255, 255, 100, 0.8)');
+        sunGradient.addColorStop(0.3, 'rgba(255, 255, 150, 0.4)');
+        sunGradient.addColorStop(1, 'rgba(255, 255, 200, 0)');
+        
+        this.ctx.fillStyle = sunGradient;
+        this.ctx.beginPath();
+        this.ctx.arc(sun.x, sun.y, sun.glowSize, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Sun core
+        this.ctx.fillStyle = '#FFD700';
+        this.ctx.beginPath();
+        this.ctx.arc(sun.x, sun.y, sun.size, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Draw clouds with realistic appearance
+        this.sky.clouds.forEach((cloud, index) => {
+            // Safety check and reset for cloud properties
+            if (!isFinite(cloud.x) || !isFinite(cloud.y) || !isFinite(cloud.width) || !isFinite(cloud.height) || !isFinite(cloud.speed)) {
+                // Reset the cloud to valid values
+                cloud.x = Math.random() * this.worldWidth;
+                cloud.y = 20 + Math.random() * 80;
+                cloud.speed = 0.2 + Math.random() * 0.6;
+                if (!isFinite(cloud.width)) cloud.width = 120 + Math.random() * 100;
+                if (!isFinite(cloud.height)) cloud.height = 60 + Math.random() * 50;
+                return;
+            }
+            
+            // Update cloud position for movement with safety checks
+            const newX = cloud.x + cloud.speed;
+            const newY = cloud.y + Math.sin(time + cloud.phase) * 0.5; // Gentle floating
+            
+            // Only update if the new values are finite
+            if (isFinite(newX)) {
+                cloud.x = newX;
+            }
+            if (isFinite(newY)) {
+                cloud.y = newY;
+            }
+            
+            // Wrap clouds around when they go off screen
+            if (cloud.x > this.worldWidth + cloud.width) {
+                cloud.x = -cloud.width;
+            }
+            
+            // Draw realistic cloud using multiple overlapping circles (puffs)
+            cloud.puffs.forEach(puff => {
+                const puffX = cloud.x + puff.x;
+                const puffY = cloud.y + puff.y + Math.sin(time + cloud.phase + puff.x * 0.01) * 2;
+                
+                // Create soft gradient for each puff
+                const puffGradient = this.ctx.createRadialGradient(
+                    puffX, puffY, 0,
+                    puffX, puffY, puff.size
+                );
+                
+                const baseOpacity = cloud.opacity * puff.opacity;
+                puffGradient.addColorStop(0, `rgba(255, 255, 255, ${baseOpacity})`);
+                puffGradient.addColorStop(0.4, `rgba(250, 250, 255, ${baseOpacity * 0.8})`);
+                puffGradient.addColorStop(0.7, `rgba(240, 245, 255, ${baseOpacity * 0.4})`);
+                puffGradient.addColorStop(1, `rgba(230, 240, 255, 0)`);
+                
+                this.ctx.fillStyle = puffGradient;
+                this.ctx.beginPath();
+                this.ctx.arc(puffX, puffY, puff.size, 0, Math.PI * 2);
+                this.ctx.fill();
+            });
+            
+            // Add subtle cloud shadow for depth
+            this.ctx.fillStyle = `rgba(200, 200, 220, ${cloud.opacity * 0.1})`;
+            cloud.puffs.forEach(puff => {
+                const shadowX = cloud.x + puff.x + 2;
+                const shadowY = cloud.y + puff.y + 2;
+                this.ctx.beginPath();
+                this.ctx.arc(shadowX, shadowY, puff.size * 0.9, 0, Math.PI * 2);
+                this.ctx.fill();
+            });
+        });
     }
     
     drawAmbientLighting() {
@@ -2735,6 +4350,10 @@ class Realistic3DGardenGame {
     
     createFloatingHearts() {
         this.effects.house.hearts = [];
+        
+        // Play heart sound effect
+        this.playSound('heart');
+        
         for (let i = 0; i < 5; i++) { // Reduced from 15 to 5 hearts
             this.effects.house.hearts.push({
                 x: 800 + Math.random() * 140,
@@ -2783,6 +4402,9 @@ class Realistic3DGardenGame {
     createJumpingLlamas() {
         this.effects.machuPicchu.llamas = [];
         
+        // Play llama sound effect
+        this.playSound('llama');
+        
         for (let i = 0; i < 3; i++) { // Reduced from 8 to 3 llamas
             this.effects.machuPicchu.llamas.push({
                 x: 120 + i * 40 + Math.random() * 20,
@@ -2823,6 +4445,181 @@ class Realistic3DGardenGame {
                 rotation: Math.random() * Math.PI * 2,
                 rotationSpeed: (Math.random() - 0.5) * 0.08,
                 bobSpeed: Math.random() * 0.1 + 0.05
+            });
+        }
+    }
+    
+    createFireworks() {
+        this.effects.rioDeJaneiro.fireworks = [];
+        
+        // Play fireworks sound effect (using existing sound)
+        this.playSound('splash');
+        
+        for (let i = 0; i < 4; i++) {
+            this.effects.rioDeJaneiro.fireworks.push({
+                x: 470 + i * 40 + Math.random() * 20,
+                y: 1220 + Math.random() * 40,
+                velocityX: (Math.random() - 0.5) * 3,
+                velocityY: -Math.random() * 4 - 2,
+                life: Math.random() * 180 + 120,
+                color: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57'][Math.floor(Math.random() * 5)],
+                size: Math.random() * 8 + 12,
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 0.1,
+                sparkles: []
+            });
+        }
+    }
+    
+    updateFireworks() {
+        this.effects.rioDeJaneiro.fireworks.forEach((firework, index) => {
+            firework.x += firework.velocityX;
+            firework.y += firework.velocityY;
+            firework.velocityY += 0.06; // Gravity
+            firework.rotation += firework.rotationSpeed;
+            firework.life--;
+            
+            // Create sparkle trail
+            if (Math.random() < 0.3) {
+                firework.sparkles.push({
+                    x: firework.x,
+                    y: firework.y,
+                    life: 20,
+                    size: Math.random() * 3 + 2
+                });
+            }
+            
+            // Update sparkles
+            firework.sparkles = firework.sparkles.filter(sparkle => {
+                sparkle.life--;
+                return sparkle.life > 0;
+            });
+            
+            if (firework.life <= 0 || firework.y > 1380) {
+                this.effects.rioDeJaneiro.fireworks.splice(index, 1);
+            }
+        });
+        
+        // Add new fireworks occasionally
+        if (Math.random() < 0.08 && this.effects.rioDeJaneiro.fireworks.length < 6) {
+            this.effects.rioDeJaneiro.fireworks.push({
+                x: 470 + Math.random() * 160,
+                y: 1320,
+                velocityX: (Math.random() - 0.5) * 3,
+                velocityY: -Math.random() * 4 - 2,
+                life: Math.random() * 180 + 120,
+                color: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57'][Math.floor(Math.random() * 5)],
+                size: Math.random() * 8 + 12,
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 0.1,
+                sparkles: []
+            });
+        }
+    }
+    
+    createBells() {
+        this.effects.sanMiguelDeAllende.bells = [];
+        
+        // Play bell sound effect (realistic church bell)
+        this.playSound('bell');
+        
+        for (let i = 0; i < 4; i++) {
+            this.effects.sanMiguelDeAllende.bells.push({
+                x: 820 + i * 50 + Math.random() * 20,
+                y: 1180 + Math.random() * 30,
+                velocityX: (Math.random() - 0.5) * 1,
+                velocityY: -Math.random() * 1 - 0.2,
+                life: Math.random() * 200 + 150,
+                size: Math.random() * 8 + 12,
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 0.08,
+                swingPhase: Math.random() * Math.PI * 2,
+                swingSpeed: Math.random() * 0.1 + 0.05,
+                color: ['#FFD700', '#FFA500', '#B8860B'][Math.floor(Math.random() * 3)] // Gold/bronze colors
+            });
+        }
+    }
+    
+    updateBells() {
+        this.effects.sanMiguelDeAllende.bells.forEach((bell, index) => {
+            bell.x += bell.velocityX + Math.sin(bell.swingPhase) * 0.8;
+            bell.y += bell.velocityY;
+            bell.velocityY += 0.03; // Very gentle gravity
+            bell.rotation += bell.rotationSpeed;
+            bell.swingPhase += bell.swingSpeed;
+            bell.life--;
+            
+            if (bell.life <= 0 || bell.y > 1380) {
+                this.effects.sanMiguelDeAllende.bells.splice(index, 1);
+            }
+        });
+        
+        // Add new bells occasionally
+        if (Math.random() < 0.04 && this.effects.sanMiguelDeAllende.bells.length < 6) {
+            this.effects.sanMiguelDeAllende.bells.push({
+                x: 820 + Math.random() * 160,
+                y: 1180,
+                velocityX: (Math.random() - 0.5) * 1,
+                velocityY: -Math.random() * 1 - 0.2,
+                life: Math.random() * 200 + 150,
+                size: Math.random() * 8 + 12,
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 0.08,
+                swingPhase: Math.random() * Math.PI * 2,
+                swingSpeed: Math.random() * 0.1 + 0.05,
+                color: ['#FFD700', '#FFA500', '#B8860B'][Math.floor(Math.random() * 3)]
+            });
+        }
+    }
+    
+    createSakuraPetals() {
+        this.effects.okinawa.sakuraPetals = [];
+        
+        // Play zen sound effect (using existing sound)
+        this.playSound('float');
+        
+        for (let i = 0; i < 5; i++) {
+            this.effects.okinawa.sakuraPetals.push({
+                x: 1170 + i * 35 + Math.random() * 20,
+                y: 1220 + Math.random() * 40,
+                velocityX: (Math.random() - 0.5) * 1.5,
+                velocityY: -Math.random() * 1.5 - 0.3,
+                life: Math.random() * 300 + 250,
+                color: ['#FFB7C5', '#FFC0CB', '#FFCCCB', '#F8BBD9', '#F5A9BC'][Math.floor(Math.random() * 5)],
+                size: Math.random() * 4 + 6,
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 0.06,
+                driftSpeed: Math.random() * 0.02 + 0.01
+            });
+        }
+    }
+    
+    updateSakuraPetals() {
+        this.effects.okinawa.sakuraPetals.forEach((petal, index) => {
+            petal.x += petal.velocityX + Math.sin(petal.life * petal.driftSpeed) * 0.8;
+            petal.y += petal.velocityY;
+            petal.velocityY += 0.02; // Very gentle gravity
+            petal.rotation += petal.rotationSpeed;
+            petal.life--;
+            
+            if (petal.life <= 0 || petal.y > 1380) {
+                this.effects.okinawa.sakuraPetals.splice(index, 1);
+            }
+        });
+        
+        // Add new petals occasionally
+        if (Math.random() < 0.04 && this.effects.okinawa.sakuraPetals.length < 7) {
+            this.effects.okinawa.sakuraPetals.push({
+                x: 1020 + Math.random() * 160,
+                y: 1320,
+                velocityX: (Math.random() - 0.5) * 1.5,
+                velocityY: -Math.random() * 1.5 - 0.3,
+                life: Math.random() * 300 + 250,
+                color: ['#FFB7C5', '#FFC0CB', '#FFCCCB', '#F8BBD9', '#F5A9BC'][Math.floor(Math.random() * 5)],
+                size: Math.random() * 4 + 6,
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 0.06,
+                driftSpeed: Math.random() * 0.02 + 0.01
             });
         }
     }
@@ -2981,6 +4778,127 @@ class Realistic3DGardenGame {
                 this.ctx.restore();
             });
             this.ctx.globalAlpha = 1;
+        }
+        
+        // Draw fireworks from Rio de Janeiro
+        if (this.effects.rioDeJaneiro.fireworksActive) {
+            this.effects.rioDeJaneiro.fireworks.forEach(firework => {
+                this.ctx.save();
+                this.ctx.translate(firework.x, firework.y);
+                this.ctx.rotate(firework.rotation);
+                this.ctx.globalAlpha = Math.min(1.0, firework.life / 100);
+                
+                // Draw firework burst
+                this.ctx.fillStyle = firework.color;
+                this.ctx.shadowBlur = 10;
+                this.ctx.shadowColor = firework.color;
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, firework.size * 0.5, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Draw sparkle trails
+                firework.sparkles.forEach(sparkle => {
+                    this.ctx.fillStyle = firework.color;
+                    this.ctx.globalAlpha = sparkle.life / 20;
+                    this.ctx.beginPath();
+                    this.ctx.arc(sparkle.x - firework.x, sparkle.y - firework.y, sparkle.size, 0, Math.PI * 2);
+                    this.ctx.fill();
+                });
+                
+                this.ctx.restore();
+            });
+            this.ctx.globalAlpha = 1;
+            this.ctx.shadowBlur = 0;
+        }
+        
+        // Draw bells from San Miguel de Allende
+        if (this.effects.sanMiguelDeAllende.bellsRinging) {
+            this.effects.sanMiguelDeAllende.bells.forEach(bell => {
+                this.ctx.save();
+                this.ctx.translate(bell.x, bell.y);
+                this.ctx.rotate(bell.rotation);
+                this.ctx.globalAlpha = Math.min(1.0, bell.life / 120);
+                
+                // Draw bell shape
+                this.ctx.fillStyle = bell.color;
+                this.ctx.strokeStyle = '#8B4513';
+                this.ctx.lineWidth = 2;
+                
+                // Bell body (trapezoid shape)
+                this.ctx.beginPath();
+                this.ctx.moveTo(-bell.size * 0.3, -bell.size * 0.4);
+                this.ctx.lineTo(bell.size * 0.3, -bell.size * 0.4);
+                this.ctx.lineTo(bell.size * 0.4, bell.size * 0.3);
+                this.ctx.lineTo(-bell.size * 0.4, bell.size * 0.3);
+                this.ctx.closePath();
+                this.ctx.fill();
+                this.ctx.stroke();
+                
+                // Bell top
+                this.ctx.fillStyle = '#8B4513';
+                this.ctx.fillRect(-bell.size * 0.1, -bell.size * 0.5, bell.size * 0.2, bell.size * 0.15);
+                
+                // Bell clapper
+                this.ctx.fillStyle = '#2F4F4F';
+                this.ctx.beginPath();
+                this.ctx.arc(0, bell.size * 0.1, bell.size * 0.08, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                this.ctx.restore();
+            });
+            this.ctx.globalAlpha = 1;
+        }
+        
+        // Draw sakura petals from Okinawa
+        if (this.effects.okinawa.shakuhachisPlaying) {
+            this.effects.okinawa.sakuraPetals.forEach(petal => {
+                this.ctx.save();
+                this.ctx.translate(petal.x, petal.y);
+                this.ctx.rotate(petal.rotation);
+                this.ctx.globalAlpha = Math.min(1.0, petal.life / 200);
+                
+                // Draw petal shape
+                this.ctx.fillStyle = petal.color;
+                this.ctx.beginPath();
+                this.ctx.ellipse(0, 0, petal.size * 0.8, petal.size * 0.4, 0, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Add petal details
+                this.ctx.strokeStyle = '#FF69B4';
+                this.ctx.lineWidth = 0.5;
+                this.ctx.stroke();
+                
+                this.ctx.restore();
+            });
+            this.ctx.globalAlpha = 1;
+        }
+        
+        // Draw explosion particles
+        if (this.explosion.active) {
+            this.explosion.particles.forEach(particle => {
+                this.ctx.save();
+                this.ctx.translate(particle.x, particle.y);
+                this.ctx.globalAlpha = Math.max(0, particle.life / particle.maxLife);
+                
+                // Draw explosion particle
+                this.ctx.fillStyle = particle.color;
+                this.ctx.shadowBlur = particle.size;
+                this.ctx.shadowColor = particle.color;
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, particle.size, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                this.ctx.restore();
+            });
+            this.ctx.globalAlpha = 1;
+            this.ctx.shadowBlur = 0;
+            
+            // Full screen explosion flash effect
+            if (this.explosion.timer < 30) {
+                const flashOpacity = (30 - this.explosion.timer) / 30 * 0.8;
+                this.ctx.fillStyle = `rgba(255, 255, 255, ${flashOpacity})`;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            }
         }
     }
     
