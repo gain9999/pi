@@ -2066,10 +2066,6 @@ class Realistic3DGardenGame {
                 this.interaction.showingMessage = true;
                 this.interaction.messageTimer = 0;
             }
-            // After a short delay, man starts following
-            if (this.man.visible && this.interaction.messageTimer > 120) { // 2 seconds delay
-                this.man.isFollowing = true;
-            }
         } else {
             // Only allow man to disappear if he hasn't started following yet
             if (this.man.visible && !this.man.isFollowing && distanceToBike > 120) {
@@ -2085,7 +2081,13 @@ class Realistic3DGardenGame {
             this.interaction.messageTimer++;
             if (this.interaction.messageTimer > 300) { // Show for 5 seconds
                 this.interaction.showingMessage = false;
+                // Don't reset messageTimer here - keep it for following logic
             }
+        }
+        
+        // Start following after message has been shown (even if message is closed)
+        if (this.man.visible && !this.man.isFollowing && this.interaction.messageTimer > 120) {
+            this.man.isFollowing = true;
         }
         
         // Simple man animation when visible
