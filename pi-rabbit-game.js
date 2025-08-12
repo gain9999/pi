@@ -84,7 +84,8 @@ class Realistic3DGardenGame {
             windmill: { spinning: false, spinTimer: 0, spinSpeed: 0 },
             dentalClinic: { onFire: false, fireTimer: 0, fireParticles: [] },
             sushiro: { fishJumping: false, fishTimer: 0, jumpingFish: [] },
-            house: { heartsFloating: false, heartsTimer: 0, hearts: [] }
+            house: { heartsFloating: false, heartsTimer: 0, hearts: [] },
+            machuPicchu: { llamasJumping: false, llamaTimer: 0, llamas: [] }
         };
         
         // Camera with smooth movement
@@ -183,6 +184,7 @@ class Realistic3DGardenGame {
         this.homeSprite = this.createHomeSprite();
         this.sushiroSprite = this.createSushiroSprite();
         this.windmillSprite = this.createWindmillSprite();
+        this.machuPicchuSprite = this.createMachuPicchuSprite();
         
         // Special items
         this.bikeSprite = this.createBikeSprite();
@@ -1297,6 +1299,148 @@ class Realistic3DGardenGame {
         return canvas;
     }
     
+    createMachuPicchuSprite() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 200;
+        canvas.height = 140;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.imageSmoothingEnabled = true;
+        
+        // Mountain backdrop
+        const mountainGradient = ctx.createLinearGradient(0, 0, 0, 140);
+        mountainGradient.addColorStop(0, '#8FBC8F');
+        mountainGradient.addColorStop(0.5, '#556B2F');
+        mountainGradient.addColorStop(1, '#2F4F4F');
+        
+        // Draw mountain silhouette
+        ctx.fillStyle = mountainGradient;
+        ctx.beginPath();
+        ctx.moveTo(0, 140);
+        ctx.lineTo(0, 80);
+        ctx.lineTo(40, 40);
+        ctx.lineTo(80, 60);
+        ctx.lineTo(120, 30);
+        ctx.lineTo(160, 50);
+        ctx.lineTo(200, 20);
+        ctx.lineTo(200, 140);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Ancient stone terraces (characteristic of Machu Picchu)
+        const stoneGradient = ctx.createLinearGradient(0, 0, 0, 140);
+        stoneGradient.addColorStop(0, '#D2B48C');
+        stoneGradient.addColorStop(0.5, '#CD853F');
+        stoneGradient.addColorStop(1, '#A0522D');
+        
+        // Draw multiple terraced levels
+        ctx.fillStyle = stoneGradient;
+        
+        // Lower terrace
+        ctx.fillRect(20, 100, 160, 15);
+        ctx.strokeStyle = '#8B4513';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(20, 100, 160, 15);
+        
+        // Middle terrace
+        ctx.fillRect(30, 85, 140, 15);
+        ctx.strokeRect(30, 85, 140, 15);
+        
+        // Upper terrace
+        ctx.fillRect(40, 70, 120, 15);
+        ctx.strokeRect(40, 70, 120, 15);
+        
+        // Temple structures
+        const templeGradient = ctx.createLinearGradient(0, 50, 0, 100);
+        templeGradient.addColorStop(0, '#F5DEB3');
+        templeGradient.addColorStop(0.7, '#DEB887');
+        templeGradient.addColorStop(1, '#D2B48C');
+        
+        // Main temple structure
+        ctx.fillStyle = templeGradient;
+        ctx.fillRect(70, 50, 60, 35);
+        ctx.strokeStyle = '#8B4513';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(70, 50, 60, 35);
+        
+        // Temple roof (triangular)
+        ctx.fillStyle = '#A0522D';
+        ctx.beginPath();
+        ctx.moveTo(65, 50);
+        ctx.lineTo(100, 25);
+        ctx.lineTo(135, 50);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // Side temple structures
+        ctx.fillStyle = templeGradient;
+        ctx.fillRect(45, 60, 20, 25);
+        ctx.strokeRect(45, 60, 20, 25);
+        
+        ctx.fillRect(135, 60, 20, 25);
+        ctx.strokeRect(135, 60, 20, 25);
+        
+        // Temple windows/doorways
+        ctx.fillStyle = '#2F4F4F';
+        ctx.fillRect(80, 65, 8, 15);
+        ctx.fillRect(100, 65, 8, 15);
+        ctx.fillRect(112, 65, 8, 15);
+        
+        // Stone block details
+        ctx.strokeStyle = '#8B4513';
+        ctx.lineWidth = 1;
+        for (let i = 70; i < 130; i += 10) {
+            for (let j = 55; j < 80; j += 8) {
+                ctx.strokeRect(i, j, 10, 8);
+            }
+        }
+        
+        // Intihuatana stone (ritual stone)
+        ctx.fillStyle = '#696969';
+        ctx.fillRect(95, 45, 10, 8);
+        ctx.strokeStyle = '#2F4F4F';
+        ctx.strokeRect(95, 45, 10, 8);
+        
+        // Steps leading up
+        ctx.fillStyle = stoneGradient;
+        for (let i = 0; i < 5; i++) {
+            const stepY = 115 - i * 5;
+            const stepWidth = 20 + i * 4;
+            ctx.fillRect(90 - stepWidth/2, stepY, stepWidth, 4);
+            ctx.strokeStyle = '#8B4513';
+            ctx.strokeRect(90 - stepWidth/2, stepY, stepWidth, 4);
+        }
+        
+        // Ancient vegetation (llama grass)
+        ctx.fillStyle = '#228B22';
+        for (let i = 0; i < 20; i++) {
+            const x = 10 + Math.random() * 180;
+            const y = 90 + Math.random() * 40;
+            if (x < 40 || x > 160) { // Only on the sides
+                ctx.fillRect(x, y, 2, 8);
+            }
+        }
+        
+        // Mystical clouds around peaks
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.beginPath();
+        ctx.arc(120, 25, 15, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.arc(160, 40, 12, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Title text
+        ctx.fillStyle = '#8B4513';
+        ctx.font = 'bold 8px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('MACHU PICCHU', 100, 135);
+        
+        return canvas;
+    }
+    
     createBikeSprite() {
         const canvas = document.createElement('canvas');
         canvas.width = 48;
@@ -1628,7 +1772,8 @@ class Realistic3DGardenGame {
             {type: 'dentalclinic', x: 200, y: 200, width: 160, height: 120},
             {type: 'home', x: 800, y: 300, width: 140, height: 110},
             {type: 'sushiro', x: 1200, y: 150, width: 180, height: 100},
-            {type: 'windmill', x: 500, y: 100, width: 120, height: 180}
+            {type: 'windmill', x: 500, y: 100, width: 120, height: 180},
+            {type: 'machupicchu', x: 100, y: 1200, width: 200, height: 140}
         ];
         
         buildingPositions.forEach(pos => {
@@ -1868,8 +2013,8 @@ class Realistic3DGardenGame {
         newX += moveX * this.player.speed;
         newY += moveY * this.player.speed;
         
-        // Check if player enters the sky area (y < 300)
-        if (newY < 300 && !this.player.isFloating) {
+        // Check if player enters the mountain top/sky area (y < 150) 
+        if (newY < 150 && !this.player.isFloating) {
             // Start floating
             this.player.isFloating = true;
             this.player.floatingTimer = 0;
@@ -1881,16 +2026,16 @@ class Realistic3DGardenGame {
             }, 2000); // 2 seconds of floating
         }
         
-        // Check world boundaries (but allow sky area if floating)
+        // Check world boundaries (but allow mountain top area if floating)
         if (this.player.isFloating) {
             // When floating, allow movement in sky but keep within world bounds
             newX = Math.max(0, Math.min(this.worldWidth - this.player.width, newX));
             // Allow y to go into sky area when floating
             newY = Math.max(-100, Math.min(this.worldHeight - this.player.height, newY));
         } else {
-            // Normal boundary checking - prevent entering sky
+            // Normal boundary checking - prevent entering mountain top area (y < 150)
             newX = Math.max(0, Math.min(this.worldWidth - this.player.width, newX));
-            newY = Math.max(300, Math.min(this.worldHeight - this.player.height, newY));
+            newY = Math.max(150, Math.min(this.worldHeight - this.player.height, newY));
         }
         
         // Check collisions with garden elements
@@ -2067,13 +2212,12 @@ class Realistic3DGardenGame {
                 this.interaction.messageTimer = 0;
             }
         } else {
-            // Only allow man to disappear if he hasn't started following yet
-            if (this.man.visible && !this.man.isFollowing && distanceToBike > 120) {
-                this.man.visible = false;
-                this.interaction.showingMessage = false;
-                this.interaction.messageTimer = 0;
-            }
-            // If man is following, he stays visible no matter what
+            // Once the man appears, he never disappears (commenting out the disappearing logic)
+            // if (this.man.visible && !this.man.isFollowing && distanceToBike > 120) {
+            //     this.man.visible = false;
+            //     this.interaction.showingMessage = false;
+            //     this.interaction.messageTimer = 0;
+            // }
         }
         
         // Update message timer
@@ -2110,7 +2254,7 @@ class Realistic3DGardenGame {
             Math.pow(this.player.y - 100, 2)
         );
         
-        if (distanceToWindmill < 300 && !this.effects.windmill.spinning) {
+        if (distanceToWindmill < 200 && !this.effects.windmill.spinning) {
             this.effects.windmill.spinning = true;
             this.effects.windmill.spinTimer = 0;
             this.effects.windmill.spinSpeed = 0.2;
@@ -2188,6 +2332,28 @@ class Realistic3DGardenGame {
             if (this.effects.house.heartsTimer > 300) { // 5 seconds
                 this.effects.house.heartsFloating = false;
                 this.effects.house.hearts = [];
+            }
+        }
+        
+        // Check distance to Machu Picchu (100, 1200)
+        const distanceToMachuPicchu = Math.sqrt(
+            Math.pow(this.player.x - 100, 2) + 
+            Math.pow(this.player.y - 1200, 2)
+        );
+        
+        if (distanceToMachuPicchu < 150 && !this.effects.machuPicchu.llamasJumping) {
+            this.effects.machuPicchu.llamasJumping = true;
+            this.effects.machuPicchu.llamaTimer = 0;
+            this.createJumpingLlamas();
+        }
+        
+        // Update Machu Picchu llamas jumping
+        if (this.effects.machuPicchu.llamasJumping) {
+            this.effects.machuPicchu.llamaTimer++;
+            this.updateJumpingLlamas();
+            if (this.effects.machuPicchu.llamaTimer > 250) { // 5 seconds
+                this.effects.machuPicchu.llamasJumping = false;
+                this.effects.machuPicchu.llamas = [];
             }
         }
     }
@@ -2497,6 +2663,7 @@ class Realistic3DGardenGame {
                             sprite = null; // Skip normal drawing
                         }
                         break;
+                    case 'machupicchu': sprite = this.machuPicchuSprite; break;
                     case 'bike': sprite = this.bikeSprite; break;
                 }
                 if (sprite) {
@@ -2568,7 +2735,7 @@ class Realistic3DGardenGame {
     
     createFloatingHearts() {
         this.effects.house.hearts = [];
-        for (let i = 0; i < 15; i++) {
+        for (let i = 0; i < 5; i++) { // Reduced from 15 to 5 hearts
             this.effects.house.hearts.push({
                 x: 800 + Math.random() * 140,
                 y: 300 + Math.random() * 110,
@@ -2596,8 +2763,8 @@ class Realistic3DGardenGame {
             }
         });
         
-        // Add new hearts continuously
-        if (Math.random() < 0.2) {
+        // Add new hearts occasionally (reduced frequency)
+        if (Math.random() < 0.04 && this.effects.house.hearts.length < 8) { // Much less frequent + max limit
             this.effects.house.hearts.push({
                 x: 800 + Math.random() * 140,
                 y: 410, // Bottom of house
@@ -2608,6 +2775,53 @@ class Realistic3DGardenGame {
                 color: Math.random() > 0.5 ? '#FF69B4' : '#FF1493',
                 rotation: Math.random() * Math.PI * 2,
                 rotationSpeed: (Math.random() - 0.5) * 0.05,
+                bobSpeed: Math.random() * 0.1 + 0.05
+            });
+        }
+    }
+    
+    createJumpingLlamas() {
+        this.effects.machuPicchu.llamas = [];
+        
+        for (let i = 0; i < 3; i++) { // Reduced from 8 to 3 llamas
+            this.effects.machuPicchu.llamas.push({
+                x: 120 + i * 40 + Math.random() * 20,
+                y: 1220 + Math.random() * 40,
+                velocityX: (Math.random() - 0.5) * 2,
+                velocityY: -Math.random() * 3 - 1,
+                life: Math.random() * 200 + 150,
+                size: Math.random() * 12 + 16, // Bigger llama emojis
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 0.08,
+                bobSpeed: Math.random() * 0.1 + 0.05
+            });
+        }
+    }
+    
+    updateJumpingLlamas() {
+        this.effects.machuPicchu.llamas.forEach((llama, index) => {
+            llama.x += llama.velocityX + Math.sin(llama.life * llama.bobSpeed) * 0.3;
+            llama.y += llama.velocityY;
+            llama.velocityY += 0.05; // Gravity
+            llama.rotation += llama.rotationSpeed;
+            llama.life--;
+            
+            if (llama.life <= 0 || llama.y > 1350) {
+                this.effects.machuPicchu.llamas.splice(index, 1);
+            }
+        });
+        
+        // Add new llamas occasionally (reduced frequency)
+        if (Math.random() < 0.05 && this.effects.machuPicchu.llamas.length < 5) { // Much less frequent + max limit
+            this.effects.machuPicchu.llamas.push({
+                x: 120 + Math.random() * 160,
+                y: 1300, // From ground level near Machu Picchu
+                velocityX: (Math.random() - 0.5) * 2,
+                velocityY: -Math.random() * 3 - 1,
+                life: Math.random() * 200 + 150,
+                size: Math.random() * 12 + 16,
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 0.08,
                 bobSpeed: Math.random() * 0.1 + 0.05
             });
         }
@@ -2736,6 +2950,34 @@ class Realistic3DGardenGame {
                 this.ctx.font = `${heart.size}px Arial`;
                 this.ctx.textAlign = 'center';
                 this.ctx.fillText('❤️', 0, heart.size * 0.3);
+                this.ctx.restore();
+            });
+            this.ctx.globalAlpha = 1;
+        }
+        
+        // Draw jumping llamas from Machu Picchu
+        if (this.effects.machuPicchu.llamasJumping) {
+            this.effects.machuPicchu.llamas.forEach(llama => {
+                this.ctx.save();
+                this.ctx.translate(llama.x, llama.y);
+                this.ctx.rotate(llama.rotation);
+                this.ctx.globalAlpha = 1.0; // Fully opaque
+                
+                // Add a subtle background for better visibility
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                this.ctx.beginPath();
+                this.ctx.arc(0, llama.size * 0.3, llama.size * 0.7, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Draw the llama emoji with enhanced visibility
+                this.ctx.fillStyle = '#8B4513'; // Brown color fallback
+                this.ctx.font = `bold ${llama.size}px Arial`;
+                this.ctx.textAlign = 'center';
+                this.ctx.strokeStyle = '#654321';
+                this.ctx.lineWidth = 1;
+                this.ctx.strokeText('🦙', 0, llama.size * 0.3);
+                this.ctx.fillText('🦙', 0, llama.size * 0.3);
+                
                 this.ctx.restore();
             });
             this.ctx.globalAlpha = 1;
