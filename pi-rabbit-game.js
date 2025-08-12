@@ -23,6 +23,9 @@ class Realistic3DGardenGame {
             animFrame: 0,
             animTimer: 0,
             isMoving: false,
+            isFloating: false,
+            floatingTimer: 0,
+            floatingStartY: 0,
             shadow: { offsetX: 2, offsetY: 4, blur: 8 }
         };
         
@@ -1727,6 +1730,9 @@ class Realistic3DGardenGame {
         // Update interaction system
         this.updateInteractions();
         
+        // Update particles
+        this.updateParticles();
+        
         // Update ambient particles
         this.updateAmbientParticles();
         
@@ -1752,6 +1758,23 @@ class Realistic3DGardenGame {
         // Subtle lighting changes over time
         this.lighting.sunAngle = Math.PI / 4 + Math.sin(this.time * 0.1) * 0.1;
         this.lighting.sunIntensity = 0.7 + Math.sin(this.time * 0.05) * 0.1;
+    }
+    
+    updateParticles() {
+        this.particles.forEach((particle, index) => {
+            particle.x += particle.velocityX;
+            particle.y += particle.velocityY;
+            particle.life--;
+            
+            // Add gravity for sparkles
+            if (particle.type === 'sparkle') {
+                particle.velocityY += 0.1;
+            }
+            
+            if (particle.life <= 0) {
+                this.particles.splice(index, 1);
+            }
+        });
     }
     
     updateAmbientParticles() {
@@ -1845,9 +1868,30 @@ class Realistic3DGardenGame {
         newX += moveX * this.player.speed;
         newY += moveY * this.player.speed;
         
-        // Check world boundaries
-        newX = Math.max(0, Math.min(this.worldWidth - this.player.width, newX));
-        newY = Math.max(0, Math.min(this.worldHeight - this.player.height, newY));
+        // Check if player enters the sky area (y < 300)
+        if (newY < 300 && !this.player.isFloating) {
+            // Start floating
+            this.player.isFloating = true;
+            this.player.floatingTimer = 0;
+            this.player.floatingStartY = newY;
+            
+            // Teleport to random safe location after floating animation
+            setTimeout(() => {
+                this.teleportPlayerToRandomLocation();
+            }, 2000); // 2 seconds of floating
+        }
+        
+        // Check world boundaries (but allow sky area if floating)
+        if (this.player.isFloating) {
+            // When floating, allow movement in sky but keep within world bounds
+            newX = Math.max(0, Math.min(this.worldWidth - this.player.width, newX));
+            // Allow y to go into sky area when floating
+            newY = Math.max(-100, Math.min(this.worldHeight - this.player.height, newY));
+        } else {
+            // Normal boundary checking - prevent entering sky
+            newX = Math.max(0, Math.min(this.worldWidth - this.player.width, newX));
+            newY = Math.max(300, Math.min(this.worldHeight - this.player.height, newY));
+        }
         
         // Check collisions with garden elements
         const playerRect = {x: newX, y: newY, width: this.player.width, height: this.player.height};
@@ -1878,7 +1922,20 @@ class Realistic3DGardenGame {
     }
     
     updateAnimations() {
-        if (this.player.isMoving) {
+        // Handle floating animation
+        if (this.player.isFloating) {
+            this.player.floatingTimer++;
+            // Gentle floating up and down motion
+            const floatOffset = Math.sin(this.player.floatingTimer * 0.1) * 10;
+            this.player.y = this.player.floatingStartY + floatOffset - this.player.floatingTimer * 0.2; // Slow upward drift
+            
+            // Gentle floating animation
+            this.player.animTimer++;
+            if (this.player.animTimer > 30) { // Slower floating animation
+                this.player.animFrame = (this.player.animFrame + 1) % 2;
+                this.player.animTimer = 0;
+            }
+        } else if (this.player.isMoving) {
             this.player.animTimer++;
             if (this.player.animTimer > 20) { // Slower, more realistic animation
                 this.player.animFrame = (this.player.animFrame + 1) % 2;
@@ -2206,6 +2263,65 @@ class Realistic3DGardenGame {
                     }
                 }
             }
+        }
+    }
+    
+    teleportPlayerToRandomLocation() {
+        // Find a safe random location on the ground (y > 300)
+        let attempts = 0;
+        let safeLocation = false;
+        let newX, newY;
+        
+        while (!safeLocation && attempts < 50) {
+            newX = Math.random() * (this.worldWidth - this.player.width);
+            newY = 400 + Math.random() * (this.worldHeight - 500); // Ground area
+            
+            // Check if location is safe (no collision with solid elements)
+            const testRect = {x: newX, y: newY, width: this.player.width, height: this.player.height};
+            let collision = false;
+            
+            for (let element of this.gardenElements) {
+                if (element.solid && this.checkCollision(testRect, element)) {
+                    collision = true;
+                    break;
+                }
+            }
+            
+            if (!collision) {
+                safeLocation = true;
+            }
+            attempts++;
+        }
+        
+        // If no safe location found, use a default safe spot
+        if (!safeLocation) {
+            newX = 400;
+            newY = 600;
+        }
+        
+        // Teleport player
+        this.player.x = newX;
+        this.player.y = newY;
+        this.player.isFloating = false;
+        this.player.floatingTimer = 0;
+        
+        // Create sparkle effect at new location
+        this.createTeleportSparkles(newX, newY);
+    }
+    
+    createTeleportSparkles(x, y) {
+        // Add sparkle particles at teleport location
+        for (let i = 0; i < 20; i++) {
+            this.particles.push({
+                x: x + this.player.width / 2,
+                y: y + this.player.height / 2,
+                velocityX: (Math.random() - 0.5) * 6,
+                velocityY: (Math.random() - 0.5) * 6,
+                life: 60,
+                size: Math.random() * 4 + 2,
+                color: '#FFD700',
+                type: 'sparkle'
+            });
         }
     }
     
@@ -2541,6 +2657,20 @@ class Realistic3DGardenGame {
     }
     
     drawSpecialEffects() {
+        // Draw sparkle particles (teleport effects)
+        this.particles.forEach(particle => {
+            if (particle.type === 'sparkle') {
+                this.ctx.save();
+                this.ctx.translate(particle.x, particle.y);
+                this.ctx.globalAlpha = Math.max(0, particle.life / 60);
+                this.ctx.fillStyle = particle.color;
+                this.ctx.font = `${particle.size * 2}px Arial`;
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText('✨', 0, particle.size);
+                this.ctx.restore();
+            }
+        });
+        
         // Draw bigger fire particles as flames
         if (this.effects.dentalClinic.onFire) {
             this.effects.dentalClinic.fireParticles.forEach(particle => {
