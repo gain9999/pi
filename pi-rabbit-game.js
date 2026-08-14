@@ -107,7 +107,8 @@ class Realistic3DGardenGame {
             machuPicchu: { llamasJumping: false, llamaTimer: 0, llamas: [] },
             rioDeJaneiro: { fireworksActive: false, fireworksTimer: 0, fireworks: [] },
             sanMiguelDeAllende: { bellsRinging: false, bellTimer: 0, bells: [] },
-            okinawa: { shakuhachisPlaying: false, shakuhachiTimer: 0, sakuraPetals: [] }
+            okinawa: { shakuhachisPlaying: false, shakuhachiTimer: 0, sakuraPetals: [] },
+            banff: { snowing: false, snowTimer: 0, snowflakes: [] }
         };
         
         // Camera with smooth movement
@@ -239,6 +240,7 @@ class Realistic3DGardenGame {
         this.rioDeJaneiroSprite = this.createRioDeJaneiroSprite();
         this.sanMiguelDeAllendeSprite = this.createSanMiguelDeAllendeSprite();
         this.okinawaSprite = this.createOkinawaSprite();
+        this.banffSprite = this.createBanffSprite();
         
         // Special items
         this.bikeSprite = this.createBikeSprite();
@@ -2063,6 +2065,182 @@ class Realistic3DGardenGame {
         return canvas;
     }
     
+    createBanffSprite() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 200;
+        canvas.height = 140;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.imageSmoothingEnabled = true;
+        
+        // Sky gradient
+        const skyGradient = ctx.createLinearGradient(0, 0, 0, 60);
+        skyGradient.addColorStop(0, '#87CEEB');
+        skyGradient.addColorStop(1, '#E0F0FF');
+        ctx.fillStyle = skyGradient;
+        ctx.fillRect(0, 0, 200, 60);
+        
+        // Back mountain range (gray granite with snow)
+        const backMountainGradient = ctx.createLinearGradient(0, 10, 0, 90);
+        backMountainGradient.addColorStop(0, '#FFFFFF');
+        backMountainGradient.addColorStop(0.4, '#C0C0C0');
+        backMountainGradient.addColorStop(1, '#808080');
+        
+        ctx.fillStyle = backMountainGradient;
+        ctx.beginPath();
+        ctx.moveTo(0, 90);
+        ctx.lineTo(0, 40);
+        ctx.lineTo(40, 15);
+        ctx.lineTo(80, 45);
+        ctx.lineTo(120, 10);
+        ctx.lineTo(170, 40);
+        ctx.lineTo(200, 25);
+        ctx.lineTo(200, 90);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Snow cap on back peaks
+        ctx.fillStyle = '#FFFFFF';  // already white, keep crisp
+        ctx.beginPath();
+        ctx.moveTo(32, 22);
+        ctx.lineTo(40, 15);
+        ctx.lineTo(48, 22);
+        ctx.lineTo(44, 28);
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.moveTo(112, 17);
+        ctx.lineTo(120, 10);
+        ctx.lineTo(128, 17);
+        ctx.lineTo(124, 24);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Front mountain range (darker)
+        const frontMountainGradient = ctx.createLinearGradient(0, 30, 0, 100);
+        frontMountainGradient.addColorStop(0, '#E8E8E8');
+        frontMountainGradient.addColorStop(1, '#696969');
+        
+        ctx.fillStyle = frontMountainGradient;
+        ctx.beginPath();
+        ctx.moveTo(0, 100);
+        ctx.lineTo(0, 60);
+        ctx.lineTo(55, 30);
+        ctx.lineTo(100, 65);
+        ctx.lineTo(150, 35);
+        ctx.lineTo(200, 70);
+        ctx.lineTo(200, 100);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Snow cap on front peaks
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.moveTo(47, 37);
+        ctx.lineTo(55, 30);
+        ctx.lineTo(63, 37);
+        ctx.lineTo(59, 44);
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.moveTo(142, 42);
+        ctx.lineTo(150, 35);
+        ctx.lineTo(158, 42);
+        ctx.lineTo(154, 49);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Turquoise lake (Lake Louise style)
+        const lakeGradient = ctx.createLinearGradient(0, 95, 0, 135);
+        lakeGradient.addColorStop(0, '#7FFFD4');
+        lakeGradient.addColorStop(0.5, '#40E0D0');
+        lakeGradient.addColorStop(1, '#1E90FF');
+        
+        ctx.fillStyle = lakeGradient;
+        ctx.fillRect(0, 95, 200, 40);
+        
+        // Lake shimmer lines
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.lineWidth = 1;
+        for (let x = 10; x < 200; x += 20) {
+            const waveY = 105 + (x % 30) * 0.3;
+            ctx.beginPath();
+            ctx.moveTo(x, waveY);
+            ctx.quadraticCurveTo(x + 8, waveY - 3, x + 16, waveY);
+            ctx.stroke();
+        }
+        
+        // Pine trees (left side)
+        for (let i = 0; i < 3; i++) {
+            const treeX = 16 + i * 18;
+            const treeY = 80 - i * 8;
+            ctx.fillStyle = '#2E4A2E';
+            ctx.beginPath();
+            ctx.moveTo(treeX, treeY);
+            ctx.lineTo(treeX + 10, treeY + 28);
+            ctx.lineTo(treeX - 10, treeY + 28);
+            ctx.closePath();
+            ctx.fill();
+            // Snow on tree
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.moveTo(treeX, treeY);
+            ctx.lineTo(treeX + 4, treeY + 8);
+            ctx.lineTo(treeX - 4, treeY + 8);
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        // Pine trees (right side)
+        for (let i = 0; i < 3; i++) {
+            const treeX = 200 - 16 - i * 18;
+            const treeY = 80 - i * 8;
+            ctx.fillStyle = '#2E4A2E';
+            ctx.beginPath();
+            ctx.moveTo(treeX, treeY);
+            ctx.lineTo(treeX + 10, treeY + 28);
+            ctx.lineTo(treeX - 10, treeY + 28);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.moveTo(treeX, treeY);
+            ctx.lineTo(treeX + 4, treeY + 8);
+            ctx.lineTo(treeX - 4, treeY + 8);
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        // Moose silhouette on the shore
+        ctx.fillStyle = '#4A3728';
+        ctx.beginPath();
+        ctx.ellipse(143, 97, 5, 3, 0, 0, Math.PI * 2); // body
+        ctx.fill();
+        ctx.fillRect(139, 97, 9, 2); // legs
+        ctx.beginPath();
+        ctx.arc(151, 94, 2.5, 0, Math.PI * 2); // head
+        ctx.fill();
+        // Antlers
+        ctx.strokeStyle = '#4A3728';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(150, 93);
+        ctx.lineTo(152, 87);
+        ctx.moveTo(152, 90);
+        ctx.lineTo(156, 88);
+        ctx.stroke();
+        
+        // Title text
+        ctx.fillStyle = '#2F4F4F';
+        ctx.font = 'bold 8px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('BANFF', 100, 135);
+        
+        return canvas;
+    }
+    
     createBikeSprite() {
         const canvas = document.createElement('canvas');
         canvas.width = 48;
@@ -3145,7 +3323,8 @@ class Realistic3DGardenGame {
             {type: 'machupicchu', x: 100, y: 1200, width: 200, height: 140},
             {type: 'riodejaneiro', x: 450, y: 1200, width: 200, height: 140},
             {type: 'sanmigueldeallende', x: 800, y: 1200, width: 200, height: 140},
-            {type: 'okinawa', x: 1150, y: 1200, width: 200, height: 140}
+            {type: 'okinawa', x: 1150, y: 1200, width: 200, height: 140},
+            {type: 'banff', x: 1500, y: 1150, width: 200, height: 140}
         ];
         
         buildingPositions.forEach(pos => {
@@ -3852,6 +4031,28 @@ class Realistic3DGardenGame {
             }
         }
         
+        // Check distance to Banff (1500, 1150)
+        const distanceToBanff = Math.sqrt(
+            Math.pow(this.player.x - 1500, 2) + 
+            Math.pow(this.player.y - 1150, 2)
+        );
+        
+        if (distanceToBanff < 100 && !this.effects.banff.snowing) {
+            this.effects.banff.snowing = true;
+            this.effects.banff.snowTimer = 0;
+            this.createSnowflakes();
+        }
+        
+        // Update Banff snowfall
+        if (this.effects.banff.snowing) {
+            this.effects.banff.snowTimer++;
+            this.updateSnowflakes();
+            if (this.effects.banff.snowTimer > 350) { // 7 seconds
+                this.effects.banff.snowing = false;
+                this.effects.banff.snowflakes = [];
+            }
+        }
+        
         // Check collision with poop
         const distanceToPoop = Math.sqrt(
             Math.pow(this.player.x - this.poop.x, 2) + 
@@ -4293,6 +4494,7 @@ class Realistic3DGardenGame {
                     case 'riodejaneiro': sprite = this.rioDeJaneiroSprite; break;
                     case 'sanmigueldeallende': sprite = this.sanMiguelDeAllendeSprite; break;
                     case 'okinawa': sprite = this.okinawaSprite; break;
+                    case 'banff': sprite = this.banffSprite; break;
                     case 'bike': sprite = this.bikeSprite; break;
                     case 'poop': sprite = this.poopSprite; break;
                 }
@@ -4745,6 +4947,53 @@ class Realistic3DGardenGame {
         }
     }
     
+    createSnowflakes() {
+        this.effects.banff.snowflakes = [];
+        
+        // Play zen sound effect (using existing sound)
+        this.playSound('float');
+        
+        for (let i = 0; i < 5; i++) {
+            this.effects.banff.snowflakes.push({
+                x: 1420 + i * 35 + Math.random() * 20,
+                y: 1100 + Math.random() * 40,
+                velocityX: (Math.random() - 0.5) * 1.5,
+                velocityY: Math.random() * 1.5 + 0.3,
+                life: Math.random() * 300 + 250,
+                color: ['#FFFFFF', '#F0F8FF', '#E6E6FA', '#FFF8DC', '#F5F5F5'][Math.floor(Math.random() * 5)],
+                size: Math.random() * 2 + 2,
+                driftSpeed: Math.random() * 0.02 + 0.01
+            });
+        }
+    }
+    
+    updateSnowflakes() {
+        this.effects.banff.snowflakes.forEach((flake, index) => {
+            flake.x += flake.velocityX + Math.sin(flake.life * flake.driftSpeed) * 0.8;
+            flake.y += flake.velocityY;
+            flake.velocityY += 0.01; // Gentle fall
+            flake.life--;
+            
+            if (flake.life <= 0 || flake.y > 1330) {
+                this.effects.banff.snowflakes.splice(index, 1);
+            }
+        });
+        
+        // Add new snowflakes occasionally
+        if (Math.random() < 0.04 && this.effects.banff.snowflakes.length < 7) {
+            this.effects.banff.snowflakes.push({
+                x: 1390 + Math.random() * 220,
+                y: 1140,
+                velocityX: (Math.random() - 0.5) * 1.5,
+                velocityY: Math.random() * 1.5 + 0.3,
+                life: Math.random() * 300 + 250,
+                color: '#FFFFFF',
+                size: Math.random() * 2 + 2,
+                driftSpeed: Math.random() * 0.02 + 0.01
+            });
+        }
+    }
+    
     drawSpinningWindmill(item) {
         // Draw the base windmill (tower and cap)
         const ctx = this.ctx;
@@ -5021,6 +5270,24 @@ class Realistic3DGardenGame {
                 this.ctx.strokeStyle = '#FF69B4';
                 this.ctx.lineWidth = 0.5;
                 this.ctx.stroke();
+                
+                this.ctx.restore();
+            });
+            this.ctx.globalAlpha = 1;
+        }
+        
+        // Draw snowflakes from Banff
+        if (this.effects.banff.snowing) {
+            this.effects.banff.snowflakes.forEach(flake => {
+                this.ctx.save();
+                this.ctx.translate(flake.x, flake.y);
+                this.ctx.globalAlpha = Math.min(1.0, flake.life / 200);
+                
+                // Draw snowflake
+                this.ctx.fillStyle = flake.color;
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, flake.size, 0, Math.PI * 2);
+                this.ctx.fill();
                 
                 this.ctx.restore();
             });
