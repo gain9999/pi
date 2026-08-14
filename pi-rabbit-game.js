@@ -108,7 +108,7 @@ class Realistic3DGardenGame {
             rioDeJaneiro: { fireworksActive: false, fireworksTimer: 0, fireworks: [] },
             sanMiguelDeAllende: { bellsRinging: false, bellTimer: 0, bells: [] },
             okinawa: { shakuhachisPlaying: false, shakuhachiTimer: 0, sakuraPetals: [] },
-            banff: { bearActive: false, bearTimer: 0, bear: null }
+            banff: { bearActive: false, bearTimer: 0, bears: [] }
         };
         
         // Camera with smooth movement
@@ -4040,16 +4040,16 @@ class Realistic3DGardenGame {
         if (distanceToBanff < 100 && !this.effects.banff.bearActive) {
             this.effects.banff.bearActive = true;
             this.effects.banff.bearTimer = 0;
-            this.createBear();
+            this.createBears();
         }
         
-        // Update Banff bear walking
+        // Update Banff bears walking
         if (this.effects.banff.bearActive) {
             this.effects.banff.bearTimer++;
-            this.updateBear();
+            this.updateBears();
             if (this.effects.banff.bearTimer > 350) { // 7 seconds
                 this.effects.banff.bearActive = false;
-                this.effects.banff.bear = null;
+                this.effects.banff.bears = [];
             }
         }
         
@@ -4947,33 +4947,30 @@ class Realistic3DGardenGame {
         }
     }
     
-    createBear() {
+    createBears() {
         // Play zen sound effect (using existing sound)
         this.playSound('float');
         
-        this.effects.banff.bear = {
-            x: 1450,
-            y: 1130,
-            direction: 1, // 1 = walking right, -1 = walking left
-            speed: 1.5,
-            size: 26,
-            bobPhase: 0
-        };
+        // Family of 3 bears walking along the lake shore
+        this.effects.banff.bears = [
+            { x: 1430, y: 1120, direction: 1, speed: 1.2, size: 24, bobPhase: 0 },
+            { x: 1500, y: 1140, direction: -1, speed: 1.6, size: 27, bobPhase: 2.1 },
+            { x: 1570, y: 1128, direction: 1, speed: 1.4, size: 22, bobPhase: 4.2 }
+        ];
     }
     
-    updateBear() {
-        const bear = this.effects.banff.bear;
-        if (!bear) return;
-        
-        bear.x += bear.direction * bear.speed;
-        bear.bobPhase += 0.1;
-        
-        // Turn around at the edges of the Banff lake area
-        if (bear.x > 1620) {
-            bear.direction = -1;
-        } else if (bear.x < 1390) {
-            bear.direction = 1;
-        }
+    updateBears() {
+        this.effects.banff.bears.forEach(bear => {
+            bear.x += bear.direction * bear.speed;
+            bear.bobPhase += 0.1;
+            
+            // Turn around at the edges of the Banff lake area
+            if (bear.x > 1620) {
+                bear.direction = -1;
+            } else if (bear.x < 1390) {
+                bear.direction = 1;
+            }
+        });
     }
     
     drawSpinningWindmill(item) {
@@ -5258,29 +5255,21 @@ class Realistic3DGardenGame {
             this.ctx.globalAlpha = 1;
         }
         
-        // Draw bear from Banff
-        if (this.effects.banff.bearActive && this.effects.banff.bear) {
-            const bear = this.effects.banff.bear;
-            this.ctx.save();
-            this.ctx.translate(bear.x, bear.y + Math.sin(bear.bobPhase) * 2);
-            this.ctx.globalAlpha = 1.0; // Fully opaque
-            
-            // Add a subtle background for better visibility
-            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            this.ctx.beginPath();
-            this.ctx.arc(0, bear.size * 0.3, bear.size * 0.7, 0, Math.PI * 2);
-            this.ctx.fill();
-            
-            // Draw the bear emoji with enhanced visibility
-            this.ctx.fillStyle = '#8B4513'; // Brown color fallback
-            this.ctx.font = `bold ${bear.size}px Arial`;
-            this.ctx.textAlign = 'center';
-            this.ctx.strokeStyle = '#654321';
-            this.ctx.lineWidth = 1;
-            this.ctx.strokeText('🐻', 0, bear.size * 0.3);
-            this.ctx.fillText('🐻', 0, bear.size * 0.3);
-            
-            this.ctx.restore();
+        // Draw bears from Banff (no circle, just the bears)
+        if (this.effects.banff.bearActive) {
+            this.effects.banff.bears.forEach(bear => {
+                this.ctx.save();
+                this.ctx.translate(bear.x, bear.y + Math.sin(bear.bobPhase) * 2);
+                this.ctx.globalAlpha = 1.0; // Fully opaque
+                
+                // Draw the bear emoji
+                this.ctx.font = `bold ${bear.size}px Arial`;
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText('🐻', 0, 0);
+                
+                this.ctx.restore();
+            });
             this.ctx.globalAlpha = 1;
         }
         
