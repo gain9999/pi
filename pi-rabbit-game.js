@@ -108,7 +108,7 @@ class Realistic3DGardenGame {
             rioDeJaneiro: { fireworksActive: false, fireworksTimer: 0, fireworks: [] },
             sanMiguelDeAllende: { bellsRinging: false, bellTimer: 0, bells: [] },
             okinawa: { shakuhachisPlaying: false, shakuhachiTimer: 0, sakuraPetals: [] },
-            banff: { snowing: false, snowTimer: 0, snowflakes: [] }
+            banff: { bearActive: false, bearTimer: 0, bear: null }
         };
         
         // Camera with smooth movement
@@ -4037,19 +4037,19 @@ class Realistic3DGardenGame {
             Math.pow(this.player.y - 1150, 2)
         );
         
-        if (distanceToBanff < 100 && !this.effects.banff.snowing) {
-            this.effects.banff.snowing = true;
-            this.effects.banff.snowTimer = 0;
-            this.createSnowflakes();
+        if (distanceToBanff < 100 && !this.effects.banff.bearActive) {
+            this.effects.banff.bearActive = true;
+            this.effects.banff.bearTimer = 0;
+            this.createBear();
         }
         
-        // Update Banff snowfall
-        if (this.effects.banff.snowing) {
-            this.effects.banff.snowTimer++;
-            this.updateSnowflakes();
-            if (this.effects.banff.snowTimer > 350) { // 7 seconds
-                this.effects.banff.snowing = false;
-                this.effects.banff.snowflakes = [];
+        // Update Banff bear walking
+        if (this.effects.banff.bearActive) {
+            this.effects.banff.bearTimer++;
+            this.updateBear();
+            if (this.effects.banff.bearTimer > 350) { // 7 seconds
+                this.effects.banff.bearActive = false;
+                this.effects.banff.bear = null;
             }
         }
         
@@ -4947,50 +4947,32 @@ class Realistic3DGardenGame {
         }
     }
     
-    createSnowflakes() {
-        this.effects.banff.snowflakes = [];
-        
+    createBear() {
         // Play zen sound effect (using existing sound)
         this.playSound('float');
         
-        for (let i = 0; i < 5; i++) {
-            this.effects.banff.snowflakes.push({
-                x: 1420 + i * 35 + Math.random() * 20,
-                y: 1100 + Math.random() * 40,
-                velocityX: (Math.random() - 0.5) * 1.5,
-                velocityY: Math.random() * 1.5 + 0.3,
-                life: Math.random() * 300 + 250,
-                color: ['#FFFFFF', '#F0F8FF', '#E6E6FA', '#FFF8DC', '#F5F5F5'][Math.floor(Math.random() * 5)],
-                size: Math.random() * 2 + 2,
-                driftSpeed: Math.random() * 0.02 + 0.01
-            });
-        }
+        this.effects.banff.bear = {
+            x: 1450,
+            y: 1130,
+            direction: 1, // 1 = walking right, -1 = walking left
+            speed: 1.5,
+            size: 26,
+            bobPhase: 0
+        };
     }
     
-    updateSnowflakes() {
-        this.effects.banff.snowflakes.forEach((flake, index) => {
-            flake.x += flake.velocityX + Math.sin(flake.life * flake.driftSpeed) * 0.8;
-            flake.y += flake.velocityY;
-            flake.velocityY += 0.01; // Gentle fall
-            flake.life--;
-            
-            if (flake.life <= 0 || flake.y > 1330) {
-                this.effects.banff.snowflakes.splice(index, 1);
-            }
-        });
+    updateBear() {
+        const bear = this.effects.banff.bear;
+        if (!bear) return;
         
-        // Add new snowflakes occasionally
-        if (Math.random() < 0.04 && this.effects.banff.snowflakes.length < 7) {
-            this.effects.banff.snowflakes.push({
-                x: 1390 + Math.random() * 220,
-                y: 1140,
-                velocityX: (Math.random() - 0.5) * 1.5,
-                velocityY: Math.random() * 1.5 + 0.3,
-                life: Math.random() * 300 + 250,
-                color: '#FFFFFF',
-                size: Math.random() * 2 + 2,
-                driftSpeed: Math.random() * 0.02 + 0.01
-            });
+        bear.x += bear.direction * bear.speed;
+        bear.bobPhase += 0.1;
+        
+        // Turn around at the edges of the Banff lake area
+        if (bear.x > 1620) {
+            bear.direction = -1;
+        } else if (bear.x < 1390) {
+            bear.direction = 1;
         }
     }
     
@@ -5276,21 +5258,29 @@ class Realistic3DGardenGame {
             this.ctx.globalAlpha = 1;
         }
         
-        // Draw snowflakes from Banff
-        if (this.effects.banff.snowing) {
-            this.effects.banff.snowflakes.forEach(flake => {
-                this.ctx.save();
-                this.ctx.translate(flake.x, flake.y);
-                this.ctx.globalAlpha = Math.min(1.0, flake.life / 200);
-                
-                // Draw snowflake
-                this.ctx.fillStyle = flake.color;
-                this.ctx.beginPath();
-                this.ctx.arc(0, 0, flake.size, 0, Math.PI * 2);
-                this.ctx.fill();
-                
-                this.ctx.restore();
-            });
+        // Draw bear from Banff
+        if (this.effects.banff.bearActive && this.effects.banff.bear) {
+            const bear = this.effects.banff.bear;
+            this.ctx.save();
+            this.ctx.translate(bear.x, bear.y + Math.sin(bear.bobPhase) * 2);
+            this.ctx.globalAlpha = 1.0; // Fully opaque
+            
+            // Add a subtle background for better visibility
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            this.ctx.beginPath();
+            this.ctx.arc(0, bear.size * 0.3, bear.size * 0.7, 0, Math.PI * 2);
+            this.ctx.fill();
+            
+            // Draw the bear emoji with enhanced visibility
+            this.ctx.fillStyle = '#8B4513'; // Brown color fallback
+            this.ctx.font = `bold ${bear.size}px Arial`;
+            this.ctx.textAlign = 'center';
+            this.ctx.strokeStyle = '#654321';
+            this.ctx.lineWidth = 1;
+            this.ctx.strokeText('🐻', 0, bear.size * 0.3);
+            this.ctx.fillText('🐻', 0, bear.size * 0.3);
+            
+            this.ctx.restore();
             this.ctx.globalAlpha = 1;
         }
         
