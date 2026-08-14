@@ -226,6 +226,7 @@ class Realistic3DGardenGame {
         
         // Realistic garden element sprites
         this.treeSprite = this.createRealistic3DTreeSprite();
+        this.pineTreeSprite = this.createPineTreeSprite();
         this.flowerBedSprite = this.createRealistic3DFlowerBedSprite();
         this.bushSprite = this.createRealistic3DBushSprite();
         this.pondSprite = this.createRealistic3DPondSprite();
@@ -719,6 +720,64 @@ class Realistic3DGardenGame {
             ctx.ellipse(x, y, 2, 3, angle, 0, 2 * Math.PI);
             ctx.fill();
         }
+        
+        return canvas;
+    }
+    
+    createPineTreeSprite() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 80;
+        canvas.height = 120;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.imageSmoothingEnabled = true;
+        
+        // Trunk
+        const trunkGradient = ctx.createLinearGradient(34, 0, 46, 0);
+        trunkGradient.addColorStop(0, '#5D4037');
+        trunkGradient.addColorStop(0.5, '#795548');
+        trunkGradient.addColorStop(1, '#4E342E');
+        ctx.fillStyle = trunkGradient;
+        ctx.fillRect(36, 72, 8, 38);
+        
+        // Foliage tiers (bottom to top)
+        const tiers = [
+            { y: 70, w: 74 },
+            { y: 52, w: 58 },
+            { y: 34, w: 42 },
+            { y: 16, w: 26 }
+        ];
+        
+        tiers.forEach(tier => {
+            const gradient = ctx.createLinearGradient(0, tier.y, 0, tier.y + 36);
+            gradient.addColorStop(0, '#2E5D46');
+            gradient.addColorStop(1, '#1B4D3E');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.moveTo(40, tier.y);
+            ctx.lineTo(40 + tier.w / 2, tier.y + 32);
+            ctx.lineTo(40 - tier.w / 2, tier.y + 32);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Snow on branches
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.beginPath();
+            ctx.moveTo(40, tier.y + 1);
+            ctx.lineTo(40 + tier.w * 0.25, tier.y + 12);
+            ctx.lineTo(40 - tier.w * 0.25, tier.y + 12);
+            ctx.closePath();
+            ctx.fill();
+        });
+        
+        // Snow cap on top
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.moveTo(40, 16);
+        ctx.lineTo(40 + 7, 26);
+        ctx.lineTo(40 - 7, 26);
+        ctx.closePath();
+        ctx.fill();
         
         return canvas;
     }
@@ -3327,6 +3386,27 @@ class Realistic3DGardenGame {
             {type: 'banff', x: 1500, y: 1150, width: 200, height: 140}
         ];
         
+        // Pine trees around Banff
+        const pinePositions = [
+            {x: 1415, y: 1050},
+            {x: 1640, y: 1040},
+            {x: 1385, y: 1170},
+            {x: 1710, y: 1140}
+        ];
+        
+        pinePositions.forEach(pos => {
+            this.gardenElements.push({
+                type: 'pinetree',
+                x: pos.x,
+                y: pos.y,
+                width: 80,
+                height: 120,
+                solid: true,
+                shadowOffsetX: 8,
+                shadowOffsetY: 12
+            });
+        });
+        
         buildingPositions.forEach(pos => {
             this.gardenElements.push({
                 type: pos.type,
@@ -4475,6 +4555,7 @@ class Realistic3DGardenGame {
                 let sprite;
                 switch (item.type) {
                     case 'tree': sprite = this.treeSprite; break;
+                    case 'pinetree': sprite = this.pineTreeSprite; break;
                     case 'flowerbed': sprite = this.flowerBedSprite; break;
                     case 'bush': sprite = this.bushSprite; break;
                     case 'pond': sprite = this.pondSprite; break;
